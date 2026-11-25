@@ -1,0 +1,20 @@
+# Copyrighted or non-redistributable material: never publish
+private/
+*.xlsx
+Full Book.pdf
+some.pdf
+
+# Fetched or built locally (see README: download.py, fonts, tesstrain)
+data/
+fonts/
+tesstrain/
+models/*.traineddata
+eval/christaller_1879/ocr/
+models_README.md
+
+# Python and macOS clutter
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+._*

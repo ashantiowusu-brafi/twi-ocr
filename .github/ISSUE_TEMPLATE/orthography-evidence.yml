@@ -1,0 +1,52 @@
+name: Orthography evidence
+description: Share evidence about how Twi or Akan was written in an older book or traditional context
+title: "[Orthography] "
+labels: ["orthography"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping document historical Twi and Akan spelling. See ORTHOGRAPHY.md for what's already documented and the open questions.
+  - type: dropdown
+    id: question
+    attributes:
+      label: Which open question does this help with?
+      options:
+        - "O1 Mark over w: caron or breve"
+        - "O2 Dot over s"
+        - "O3 Small marks in the key's consonant list"
+        - "O4 fw and modern hw"
+        - "O5 The 1875 Grammar"
+        - "O6 Change over time (1853 to 1881)"
+        - "O7 Fante spelling"
+        - "O8 Dates of the spelling changes"
+        - "O9 Marks the key does not list"
+        - "Correction to Christaller's key as summarized in ORTHOGRAPHY.md"
+        - "Something new"
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: Author, title, year, page, and a link to the scan if it's online. For personal knowledge, say so.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What the source shows
+      description: Quote or describe it, and attach a cropped screenshot if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: interpretation
+    attributes:
+      label: What you think it means
+      description: Including how sure you are.
+  - type: checkboxes
+    id: rule
+    attributes:
+      label: Rule table
+      options:
+        - label: This should change a row in orthography/christaller_1879.tsv

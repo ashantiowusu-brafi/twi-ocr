@@ -1,0 +1,143 @@
+cff-version: 1.2.0
+message: "If you use this software or model, please cite it as below, and cite the datasets listed under references."
+title: "Twi OCR: Reading Printed Akan"
+abstract: >-
+  A Tesseract model and tool chain for printed Asante and Akuapem Twi,
+  developed from Tesseract's Latin model on synthetic line images rendered
+  from GhanaNLP and Ghana Corpus text, with Twi word-list post-correction.
+  Evaluated on scanned pages of Bu Me Bɛ: Proverbs of the Akans. Includes a
+  second model and tools for the 19th-century Basel Mission spelling used by
+  J. G. Christaller (1879), with a documented, editable orthography table.
+authors:
+  - family-names: Owusu-Brafi
+    given-names: Ashanti
+type: software
+version: 0.1.0
+date-released: 2026-11-24
+license: MIT
+repository-code: "https://github.com/ashantiowusu-brafi/twi-ocr"
+keywords:
+  - OCR
+  - Tesseract
+  - Twi
+  - Akan
+  - low-resource languages
+  - Ghana
+references:
+  - type: article
+    title: "GhanaNLP Parallel Corpora: Comprehensive Multilingual Resources for Low-Resource Ghanaian Languages"
+    authors:
+      - family-names: Adu Gyamfi
+        given-names: Lawrence
+      - family-names: Azunre
+        given-names: Paul
+      - family-names: Moore
+        given-names: Stephen Edward
+      - family-names: Budu
+        given-names: Joel
+      - family-names: Asare
+        given-names: Akwasi
+      - family-names: Owusu
+        given-names: Mich-Seth
+      - family-names: Asiamah
+        given-names: Jonathan Ofori
+    year: 2026
+    identifiers:
+      - type: other
+        value: "arXiv:2603.13793v2"
+    url: "https://arxiv.org/abs/2603.13793v2"
+    license: CC-BY-NC-SA-4.0
+    notes: "Base license CC BY-NC-SA 4.0 plus GhanaNLP terms: no commercial use without written (paid) permission; no military use; retain original metadata and source attribution; do not remove cultural or dialectal references. Contact team@ghananlp.org."
+  - type: data
+    title: "Ghana Corpus"
+    authors:
+      - name: "Ghana NLP Community"
+    url: "https://huggingface.co/datasets/ghananlpcommunity/ghana-corpus"
+    license: CC-BY-NC-4.0
+    notes: "Text derived from Bible translations (YouVersion IDs 1461, 1861, 2094, 1631, 3439, 3440); rights belong to their publishers."
+  - type: software
+    title: "Ghana Corpus Builder"
+    authors:
+      - name: "Ghana NLP Community"
+    url: "https://github.com/GhanaNLP/ghana-corpus-builder"
+    license: MIT
+  - type: article
+    title: "Advancing Automatic Speech Recognition for Low-Resource Ghanaian Languages: Audio Datasets for Akan, Ewe, Dagbani, Dagaare, and Ikposo"
+    authors:
+      - family-names: Wiafe
+        given-names: I.
+      - family-names: Abdulai
+        given-names: J.-D.
+      - family-names: Ekpezu
+        given-names: A. O.
+      - family-names: Helegah
+        given-names: R. D.
+      - family-names: Atsakpo
+        given-names: E. D.
+      - family-names: Nutrokpor
+        given-names: C.
+      - family-names: Winful
+        given-names: F. B. P.
+      - family-names: Solaga
+        given-names: K. K.
+    journal: "Data in Brief"
+    volume: 61
+    start: 111880
+    year: 2025
+    identifiers:
+      - type: doi
+        value: "10.57760/sciencedb.22298"
+        description: "UGSpeechData dataset"
+    license: CC-BY-NC-ND-4.0
+  - type: conference-paper
+    title: "An Overview of the Tesseract OCR Engine"
+    authors:
+      - family-names: Smith
+        given-names: Ray
+    collection-title: "Proceedings of the Ninth International Conference on Document Analysis and Recognition (ICDAR 2007)"
+    start: 629
+    end: 633
+    year: 2007
+    publisher:
+      name: IEEE
+  - type: software
+    title: "tessdata_best"
+    authors:
+      - name: "tesseract-ocr"
+    url: "https://github.com/tesseract-ocr/tessdata_best"
+    license: Apache-2.0
+  - type: software
+    title: "tesstrain"
+    authors:
+      - name: "tesseract-ocr"
+    url: "https://github.com/tesseract-ocr/tesstrain"
+    license: Apache-2.0
+  - type: software
+    title: "Ewe Tesseract OCR"
+    authors:
+      - name: "NissiKlaus"
+    version: 0.1.0
+    url: "https://huggingface.co/NissiKlaus/ewe-tesseract-ocr"
+    notes: "Method followed (synthetic rendering and fine-tuning from Latin); no files reused."
+  - type: book
+    title: "Twi mmebusɛm, mpensã-ahansĩa mmoaano: A Collection of Three Thousand and Six Hundred Tshi Proverbs"
+    authors:
+      - family-names: Christaller
+        given-names: Johann Gottlieb
+    publisher:
+      name: "Basel Evangelical Missionary Society"
+    year: 1879
+    notes: "Public domain. Scans from HathiTrust (nnc1.0027031179, Google-digitized); key to the letters and pages 1-13 used for the 1879 test set."
+  - type: book
+    title: "Bu Me Bɛ: Proverbs of the Akans"
+    authors:
+      - family-names: Appiah
+        given-names: Peggy
+      - family-names: Appiah
+        given-names: Kwame Anthony
+      - family-names: Agyeman-Duah
+        given-names: Ivor
+    publisher:
+      name: "Ayebia Clarke Publishing"
+    year: 2007
+    notes: "Test set only; scans and text not redistributed."

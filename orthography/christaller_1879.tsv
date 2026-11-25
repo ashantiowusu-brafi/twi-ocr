@@ -1,0 +1,14 @@
+id	christaller_codepoints	modern_codepoints	direction	name	example_1879	example_modern	status	source
+open_e	0065 0332	025B	both	e with line below = open e, as in "let, there"	se̲	sɛ	verified	Christaller 1879, key to the letters (scan seq. 8): vowel class I
+open_E	0045 0332	0190	both	capital open E	E̲	Ɛ	verified	Christaller 1879, key to the letters (scan seq. 8)
+open_o	006F 0332	0254	both	o with line below = open o, as in "not, nor"	O̲ba	Ɔba	verified	Christaller 1879, key to the letters (scan seq. 8): vowel class I
+open_O	004F 0332	0186	both	capital open O	O̲ba	Ɔba	verified	Christaller 1879, key to the letters (scan seq. 8)
+dot_below	0323		to_modern	dot under e, o, a: ẹ ọ = class I e/o "diminished, approaching i, u"; ạ = "thin" a (class II)	Abẹ, wọtwere	Abe, wotwere	verified	Christaller 1879, key to the letters (scan seq. 8): "I. a e̲ o̲, ẹ ọ; II. ạ e o, i u"
+macron	0304		to_modern	macron = long vowel	Abedw̌eā	Abedwea	verified	Christaller 1879, key (scan seq. 8): "a ā ... short and long"; seen p. 4 (proverbs 73-74)
+tilde	0303		to_modern	tilde = nasal vowel	nsũ, sumănã	nsu, sumana	verified	Christaller 1879, key (scan seq. 8): "ã ẽ ĩ õ ũ are nasal"
+breve	0306		to_modern	breve = very short vowel	sumănã, sĕre̲	sumana, serɛ	verified	Christaller 1879, key (scan seq. 8): "ă ĕ ĭ ŏ ŭ are very short"
+acute	0301		to_modern	acute = high or middle tone; on syllabic m, n, ṅ printed as a mark after the letter (m′, typed ’)	wommá, n’nyae	womma, n’nyae	verified	Christaller 1879, key (scan seq. 8): "á é ... m' n' ṅ' have high or middle tone"
+grave	0300		to_modern	grave = low tone	mù, abébesĕrè̲	mu, abebeserɛ	verified	Christaller 1879, key (scan seq. 8): "à è ... low tone"; seen p. 4 (proverbs 70-71)
+w_mark	030C		to_modern	mark over w: w̌ = "wy" (rounded and palatal); also in tw̌, dw̌, fw̌. Type shape (caron or breve) to verify	ntw̌a, o̲w̌e	ntwa, ɔwe	verified	Christaller 1879, key (scan seq. 8): "w̌ = wy"; encoding as U+030C is a choice, see ORTHOGRAPHY.md
+dot_above	0307		to_modern	ṅ = ng as in "sing" (velar nasal). A dot also appears over s in mmuṡũa: meaning unknown	ṅkyene, aṅkyèafóo̲	nkyene, ankyeafoɔ	verified	Christaller 1879, key (scan seq. 8): "ṅ = ng in sing"; the s-dot is open question O2
+circumflex	0302		to_modern	circumflex: not in the key; seen on â in nâ, mmâã, ṅkonyâã (meaning unknown)	nâ, mmâã	na, mmaa	observed	Christaller 1879 pp. 6, 9, 11 (proverbs 123, 195, 212, 241); open question O8
