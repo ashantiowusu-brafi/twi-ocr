@@ -57,7 +57,7 @@ For books in the older 1879 spelling, use `twi_1879` instead (see below).
 
 ### Results
 
-Tested on 319 proverbs from the first 14 scanned pages of *Bu Me Bɛ: Proverbs of the Akans* (proverbs 1–320 of the book's 7,015), all proofread; every model scored on the same proverbs. Full table: `eval/bu_me_be_results.md`.
+Tested on 319 proverbs from the first 14 scanned pages of *Bu Me Bɛ: Proverbs of the Akans* (proverbs 1–320 of the book's 7,015), all proofread; every model scored on the same proverbs. Full table: [`eval/bu_me_be_results.md`](https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/eval/bu_me_be_results.md).
 
 | | Character error rate | ɛ/ɔ accuracy |
 | --- | --- | --- |
@@ -69,7 +69,7 @@ Tested on 319 proverbs from the first 14 scanned pages of *Bu Me Bɛ: Proverbs o
 
 - **Tested on one book.** Results on other printing styles and handwriting are unknown. It will be scored on the whole of *Bu Me Bɛ* once all 7,015 proverbs are transcribed.
 - **It can't read 19th-century spelling** (e̲ o̲, tildes, accents): use `twi_1879` for that.
-- **Remaining errors:** mostly i read as l (fixed by the post-correction); details in `eval/errors_twi_v4.md`.
+- **Remaining errors:** mostly i read as l (fixed by the post-correction); details in [`eval/errors_twi_v4.md`](https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/eval/errors_twi_v4.md).
 - **Spelling is reproduced, not standardized.** The model reads the page as printed. It does not modernize spellings, and it should not be used to "correct" e/ɛ or o/ɔ, which distinguish different words in Twi.
 - **Tone marks** were not tested: the test book prints none.
 
@@ -89,7 +89,7 @@ This writes the text exactly as printed, and a copy converted to modern spelling
 
 ### Results
 
-On four proofread pages of the 1879 book (proverbs 1–96), with the clean-up step. Full results: `eval/christaller_1879/results.md`.
+On four proofread pages of the 1879 book (proverbs 1–96), with the clean-up step. Full results: [`eval/christaller_1879/results.md`](https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/eval/christaller_1879/results.md).
 
 | | Error rate, as printed | Error rate, modern spelling | 1879 marks read correctly |
 | --- | --- | --- | --- |
@@ -101,7 +101,7 @@ On four proofread pages of the 1879 book (proverbs 1–96), with the clean-up st
 
 - **Tested on four pages of one book.** Pages 5–13 of the test set are drafts, and other Basel Mission books are untested.
 - **Weakest marks:** ṅ (28 of 65) and w̌ (8 of 22) are often missed.
-- **Training marks are placed by rough rules of thumb,** not where Christaller used them, because too little 1879 text is transcribed. Issues T2, T3 and T4 in `ORTHOGRAPHY.md` would fix this.
+- **Training marks are placed by rough rules of thumb,** not where Christaller used them, because too little 1879 text is transcribed. Issues T2, T3 and T4 in [`ORTHOGRAPHY.md`](https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/ORTHOGRAPHY.md) would fix this.
 - **It is not meant for modern text:** on *Bu Me Bɛ* its error rate is 12.8%, close to stock Tesseract.
 - **The modern-spelling copy drops tildes and accents,** so keep the as-printed copy when the marks matter.
 
@@ -115,4 +115,4 @@ No *Bu Me Bɛ* text was used in training.
 
 Hosted by the Si Hene Foundation. Transcription of the *Bu Me Bɛ* answer key: Nana Adwoa Agyekum.
 
-Ghana NLP Community; GhanaNLP (Adu Gyamfi et al., 2026); the tesseract-ocr project (tessdata_best, tesstrain); the Ewe Tesseract OCR model (method); SIL International and Google (fonts). Full references: `README.md` and `CITATION.cff`.
+Ghana NLP Community; GhanaNLP (Adu Gyamfi et al., 2026); the tesseract-ocr project (tessdata_best, tesstrain); the Ewe Tesseract OCR model (method); SIL International and Google (fonts). Full references: [`README.md`](https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/README.md) and [`CITATION.cff`](https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/CITATION.cff).
