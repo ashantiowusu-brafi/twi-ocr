@@ -1,9 +1,12 @@
 """Read printed Twi from images or PDFs with the Twi Tesseract model.
 
 This command: renders PDF pages, runs Tesseract with the Twi
-model, and (optionally) fixes the model's main mistake, "i" read as
-"l", using a Twi word list. Other letters are never changed, because e/ɛ and
-o/ɔ distinguish different words in Twi.
+model, and (optionally) fixes common misreadings line by line, as the desktop
+app does (postcorrect.correct_page). On Twi lines it fixes the model's main
+mistake, "i" read as "l", using a Twi word list; e/ɛ and o/ɔ are never
+changed there, because they distinguish different words in Twi. On English
+lines (the book's translations) it fixes clear English mistakes instead:
+"it Is" -> "it is", "wil!" -> "will", "ɔver" -> "over" (issue T7).
 
 Examples:
     python ocr.py page.png                      # print the text
@@ -21,7 +24,9 @@ Requirements:
     - pip install pillow pypdfium2        (pypdfium2 only for PDFs)
     - For --correct (on by default): the public word list built by
       `python download.py`, which writes data/twi_ghananlp.txt. Without it,
-      ocr.py prints a note and skips correction.
+      ocr.py prints a note and skips correction. The English word list,
+      wordlists/english_words.txt, is part of the project; without it only
+      the Twi fixes are made.
 
 1879 mode reads Christaller-era spelling (e̲ o̲ for ɛ ɔ, tildes, accents) with
 the twi_1879 model, and fixes two patterns the model gets wrong (see
@@ -109,7 +114,7 @@ def run_tesseract(image: Path, model: str, tessdata: Path, psm: int) -> str:
 # --- Post-correction ---------------------------------------------------------
 
 def load_corrector():
-    """Return a function that fixes l -> i, or None if no word list is available."""
+    """Return a function that corrects a page, or None if no Twi word list is available."""
     if not WORD_LIST.exists():
         print(f"Note: {WORD_LIST.relative_to(WORD_LIST.parent.parent)} not found, so "
               "i/l correction is off. Run `python download.py` once to enable it.",
@@ -118,7 +123,8 @@ def load_corrector():
     import postcorrect as pc
     pc.CONFUSIONS = pc.SWAP_SETS["i"]   # Only l/I/1 -> i; never e/ɛ or o/ɔ.
     vocab = pc.build_vocabulary([WORD_LIST])
-    return lambda text: pc.correct_text(text, vocab)
+    english = pc.load_english_words() or None   # Without it, every line gets the Twi fixes.
+    return lambda text: pc.correct_page(text, vocab, english)[0]
 
 
 # --- Main --------------------------------------------------------------------
@@ -139,7 +145,7 @@ def main() -> None:
                         help="Tesseract page segmentation mode (default 3: full page, or 6 "
                              "with --orthography 1879; 6: one block of text; 7: a single line)")
     parser.add_argument("--no-correct", dest="correct", action="store_false",
-                        help="Skip the i/l word-list correction")
+                        help="Skip the word fixes (i/l in Twi, clear English mistakes)")
     args = parser.parse_args()
 
     old_style = args.orthography == "1879"

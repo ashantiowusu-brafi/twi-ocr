@@ -67,7 +67,7 @@ The book's own key to the letters explains most of the marks: line below = open 
 
 ## How it works
 
-![Diagram of the twi-ocr workflow in three parts: building the training data and training the models, testing the models on Bu Me Bɛ and the 1879 book, and reading a PDF or image with ocr.py. It shows which scripts read and write which PDF, image, text and table files, and which files are private.](docs/workflow.png)
+![Diagram of the twi-ocr workflow in three parts: building the training data and training the models, testing the models on Bu Me Bɛ and the 1879 book (including the word fixes and the English check), and reading a PDF or image with ocr.py or the desktop app. It shows which scripts read and write which PDF, image, text and table files, and which files are private.](docs/workflow.png)
 
 1. **Text:** Twi sentences are collected from GhanaNLP and the Ghana Corpus, cleaned, and standardized (for example, Greek ε is replaced with Twi ɛ).
 2. **Training images:** the text is rendered as scan-like line images in fonts that contain ɛ and ɔ, styled after the book (capitals, proverb numbers, curly quotes).
