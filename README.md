@@ -79,6 +79,7 @@ The book's own key to the letters explains most of the marks: line below = open 
 | Script | Purpose |
 | --- | --- |
 | `ocr.py` | **Read images or PDFs with the model (start here)** |
+| `app/twi_ocr_app.py` | Desktop app for Mac: the same reading in a window (see `app/README.md`) |
 | `download.py` | Download and clean the GhanaNLP and Ghana Corpus text |
 | `prepare_ug.py` | Extract UGSpeechData transcriptions for the private word list |
 | `render_lines.py` | Render training line images |

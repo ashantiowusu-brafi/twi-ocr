@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Twi OCR</title>
+<!-- Icons: Tabler Icons 3.53 (MIT licence, © Paweł Kuna), see ui/icons-LICENSE.txt.
+     Font: Charis 7.000 (SIL Open Font License), see ui/fonts/OFL.txt. -->
+<style>
+@font-face { font-family: "Charis Twi"; src: url("fonts/Charis-Regular.ttf"); }
+:root { --ink: #1D1D1F; --muted: #3F3F46; --soft: #52525B; --line: #C9C9CF; --panel: #E3E3E8; --blue: #1D4ED8; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #EDEDF0; color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+body { overflow: auto; }
+button { font-family: inherit; color: var(--ink); cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.5; }
+.view { padding: 14px 24px; display: flex; flex-direction: column; gap: 12px; }
+#main { max-width: 960px; margin: 0 auto; }
+.hidden { display: none !important; }
+.label { font-size: 16px; }
+.btn { background: #FFFFFF; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  display: flex; align-items: center; gap: 12px; padding: 0 16px; font-size: 16px; }
+.btn:hover:not(:disabled) { background: #F7F7F9; }
+.small { height: 34px; padding: 0 14px; font-size: 14px; border-radius: 6px; box-shadow: none; }
+.primary { background: var(--blue); border: none; color: #FFFFFF; font-weight: 600; border-radius: 8px; }
+.primary:hover:not(:disabled) { background: #1E40AF; }
+#restart-note { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 2; width: 440px; background: #FFFBEB; border: 1px solid #FCD34D;
+  color: #78350F; border-radius: 8px; padding: 10px 14px; font-size: 13px; line-height: 1.45; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+/* After a reading: Start reading is greyed (still usable); Return to results is blue. */
+.primary.muted { background: #E4E4E7; color: #52525B; border: 1px solid var(--line); font-weight: 500; }
+.primary.muted:hover:not(:disabled) { background: #D4D4D8; }
+#review-btn.outline { background: #FFFFFF; color: var(--blue); border: 1px solid var(--blue); }
+#review-btn.outline:hover { background: #EEF2FF; }
+.group { background: var(--panel); border: 1px solid #D4D4DA; border-radius: 10px; padding: 10px 16px 12px;
+  display: flex; flex-direction: column; gap: 8px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.spell { text-align: left; background: #FFFFFF; border: 2px solid var(--line); border-radius: 10px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.spell[aria-pressed="true"] { border-color: var(--blue); }
+.glyph { width: 40px; height: 40px; border-radius: 10px; background: #E4E4E7; color: #27272A; display: flex;
+  align-items: center; justify-content: center; gap: 3px; font-size: 19px; font-weight: 700; }
+.u { text-decoration: underline; text-underline-offset: 0.16em; text-decoration-thickness: 0.09em; }
+.desc { font-size: 13px; line-height: 1.4; color: var(--muted); }
+#drop { border: 2px dashed #A1A1AA; border-radius: 10px; min-height: 58px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px; background: #F4F4F6; color: var(--soft); padding: 8px; text-align: center; }
+#drop.has-files { border-style: solid; border-color: var(--blue); background: #EEF2FF; color: var(--ink); }
+.check { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.check input { width: 18px; height: 18px; margin: 0; }
+.field { flex: 1; background: #FFFFFF; border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; color: var(--muted);
+  font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pill { background: #FFFFFF; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; display: flex; gap: 12px; font-size: 14px; }
+.ok { color: #15803D; } .missing { color: #B91C1C; }
+.note { font-size: 13px; color: var(--soft); display: flex; align-items: center; gap: 8px; border-top: 1px solid #D4D4DA; padding-top: 12px; }
+#banner { border-radius: 8px; padding: 10px 14px; font-size: 14px; background: #FEF2F2; border: 1px solid #FCA5A5; color: #7F1D1D; }
+#settings { background: #FFFFFF; border: 1px solid #D4D4DA; border-radius: 10px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+/* Progress */
+#progress { position: fixed; inset: 0; background: rgba(237,237,240,0.92); display: flex; align-items: center; justify-content: center; }
+.progress-card { background: #FFFFFF; border: 1px solid #D4D4DA; border-radius: 12px; padding: 24px 28px; width: 420px;
+  display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+.bar { height: 8px; border-radius: 4px; background: #D4D4DA; overflow: hidden; }
+.bar > span { display: block; height: 8px; background: var(--blue); width: 0; transition: width 0.2s; }
+/* Results */
+#results { padding: 0; gap: 0; height: 100vh; }
+#name-pop { position: absolute; top: calc(100% - 4px); right: 20px; z-index: 5; width: 420px; background: #FFFFFF;
+  border: 1px solid #D4D4DA; border-radius: 10px; padding: 14px 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.14);
+  display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.inline-input { font: inherit; font-size: 14px; color: var(--ink); background: #FFFFFF; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+#name-pop input { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+#name-pop .example { font-size: 13px; color: var(--soft); line-height: 1.5; }
+#name-pop code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--ink); }
+.toolbar { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px;
+  border-bottom: 1px solid #D4D4DA; flex-wrap: wrap; }
+.tag { background: #FDEBD3; color: #9A3412; border-radius: 6px; padding: 5px 10px; font-size: 14px; font-weight: 600; }
+.tag.basel { background: #FDEBD3; color: #9A3412; }
+.icon-btn { width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 6px; box-shadow: none; }
+.panes { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 3fr) minmax(340px, 2fr); gap: 16px; padding: 16px 20px; }
+.pane { background: #FFFFFF; border: 1px solid #D4D4DA; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.pane-title { font-size: 13px; color: var(--soft); font-weight: 600; letter-spacing: 0.02em; }
+.scan { flex: 1; min-height: 0; overflow: auto; background: #F4F4F6; border-radius: 6px; padding: 12px; cursor: grab; }
+.scan.dragging { cursor: grabbing; user-select: none; }
+.scan img { display: block; max-width: none; height: auto; border: 1px solid #E4E4E7; margin: 0 auto; -webkit-user-drag: none; }
+.zoom { display: flex; align-items: center; gap: 6px; }
+.zoom .btn { height: 30px; font-size: 13px; padding: 0 10px; border-radius: 6px; box-shadow: none; }
+#zoom-level { font-size: 13px; color: var(--soft); min-width: 44px; text-align: center; }
+.tabs { display: flex; gap: 4px; background: #E4E4E7; border-radius: 8px; padding: 3px; align-self: flex-start; }
+.tabs button { height: 32px; padding: 0 14px; border: none; border-radius: 6px; font-size: 14px; background: transparent; }
+.tabs button[aria-selected="true"] { background: #FFFFFF; }
+.chars { display: flex; flex-direction: column; gap: 4px; }
+.chars-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.chars-label { font-size: 12px; color: var(--soft); width: 46px; }
+.chars button { min-width: 28px; height: 30px; padding: 0 5px; border: 1px solid var(--line); border-radius: 6px; background: #FFFFFF;
+  font-family: "Charis Twi", "Charis SIL", "Noto Serif", serif; font-size: 18px; line-height: 1; }
+.chars button:hover { background: #F7F7F9; }
+textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; border-radius: 6px; padding: 14px 16px;
+  font-family: "Charis Twi", "Charis SIL", "Noto Serif", serif; font-size: 18px; line-height: 1.6; color: var(--ink); outline-color: var(--blue); }
+.statusbar { height: 34px; display: flex; align-items: center; gap: 18px; padding: 0 20px; border-top: 1px solid #D4D4DA;
+  background: #E4E4E8; font-size: 13px; color: var(--muted); }
+#saved { color: #15803D; }
+</style>
+</head>
+<body>
+
+<!-- ============ Main view ============ -->
+<main id="main" class="view">
+  <div id="banner" class="hidden" role="alert"></div>
+
+  <section style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+      <div style="display: flex; align-items: center; gap: 12px">
+      <span class="label">Models and settings (check first)</span>
+      <button class="btn" id="settings-btn" style="height: 38px; font-size: 15px; padding: 0 14px; gap: 10px"><svg width="22" height="22" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg> Settings…</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted)">
+        <span>Installed:</span>
+        <span class="pill" id="installed"><span>Checking…</span></span>
+        <button class="btn icon-btn" id="refresh-btn" aria-label="Check again"><svg width="18" height="18" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg></button>
+      </div>
+    </div>
+    <div id="settings" class="hidden">
+      <div style="font-size: 15px; font-weight: 600">Settings</div>
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 14px">
+        <span>Tesseract:</span><span class="field" id="tess-path">Not found</span>
+        <button class="btn small" id="tess-btn">Choose…</button>
+      </div>
+      <div class="desc" style="font-size: 13px">If Tesseract is installed but not found, choose the <code>tesseract</code> program, for example in /opt/homebrew/bin or /usr/local/bin. In Terminal, <code>which tesseract</code> shows where it is.</div>
+      <div class="desc" style="font-size: 13px" id="wordlist-note"></div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 12px">
+    <div class="group">
+      <div style="font-size: 15px">1. Choose the spelling of your book</div>
+      <div class="grid2">
+        <button class="spell" data-spelling="modern" aria-pressed="true">
+          <span style="display: flex; align-items: center; gap: 14px">
+            <span class="glyph">ɛɔ</span>
+            <span style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 600">Modern Twi</span><span style="font-size: 13px; color: var(--soft)">twi model</span></span>
+          </span>
+          <span class="desc">For books in today's spelling, with ɛ and ɔ. Also fixes the letter l when it should be i.</span>
+        </button>
+        <button class="spell" data-spelling="basel1879" aria-pressed="false">
+          <span style="display: flex; align-items: center; gap: 14px">
+            <span class="glyph"><span class="u">e</span><span class="u">o</span></span>
+            <span style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 600">Basel Twi 1879</span><span style="font-size: 13px; color: var(--soft)">twi_1879 model</span></span>
+          </span>
+          <span class="desc">For Christaller-era books in the Basel Mission spelling (<span class="u">e</span>, <span class="u">o</span>, tildes, tone marks). Saves the page as printed plus a modern-spelling copy.</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="group">
+      <div style="font-size: 15px">2. Open your scans</div>
+      <div class="grid3">
+        <button class="btn" data-choose="pdf" style="height: 46px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" /><path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" /><path d="M17 18h2" /><path d="M20 15h-3v6" /><path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" /></svg> Open PDF…</button>
+        <button class="btn" data-choose="images" style="height: 46px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 8h.01" /><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12" /><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5" /><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3" /></svg> Open images…</button>
+        <button class="btn" data-choose="folder" style="height: 46px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" /></svg> Open folder…</button>
+      </div>
+      <div id="drop">
+        <span style="font-size: 15px; color: var(--muted)" id="drop-title">or drop a PDF or scanned pages here</span>
+        <span style="font-size: 13px" id="drop-sub">PDF, PNG, JPG or TIFF</span>
+      </div>
+    </div>
+
+    <div class="group">
+      <div style="font-size: 15px">3. Options</div>
+      <div class="grid3">
+      <label class="check" title="Fix the letter l when it should be i (Modern Twi only)"><input type="checkbox" id="opt-fix"> Fix l read as i (Modern Twi)</label>
+      <label class="check" title="Also save a modern-spelling copy of each page (Basel Twi 1879 only)"><input type="checkbox" id="opt-modern"> Modern-spelling copy (Basel 1879)</label>
+      <label class="check" title="Beta: reads about twice as fast with a smaller copy of the model. Its accuracy has not been measured yet and it may misread a few more letters. Turn off for the most accurate reading."><input type="checkbox" id="opt-fast"> Faster reading (beta)</label>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 14px">
+        <span>Save text to:</span><span class="field" id="out-path"></span>
+        <button class="btn small" id="out-btn">Change…</button>
+        <label style="display: flex; align-items: center; gap: 8px; margin-left: 6px" title="Pages are saved as name_001.txt, name_002.txt, … in a folder with the same name.">File name:
+          <input class="inline-input" id="main-name" style="width: 150px" spellcheck="false" placeholder="name of the PDF"></label>
+        <label style="display: flex; align-items: center; gap: 8px" title="The number the first page gets, for example 17 if the PDF starts on page 17 of the book.">starting at
+          <input class="inline-input" id="main-start" type="number" min="0" step="1" style="width: 66px"></label>
+      </div>
+    </div>
+  </section>
+
+  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap">
+    <div style="display: flex; gap: 10px; margin-top: 2px">
+      <button class="btn" data-link="https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/ORTHOGRAPHY.md" style="height: 40px; font-size: 15px; gap: 8px"><svg width="20" height="20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6l0 13" /><path d="M12 6l0 13" /><path d="M21 6l0 13" /></svg> Spelling guide</button>
+      <button class="btn" data-link="https://github.com/ashantiowusu-brafi/twi-ocr/issues" style="height: 40px; font-size: 15px; gap: 8px"><svg width="20" height="20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 9h8" /><path d="M8 13h6" /><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" /></svg> Report a problem</button>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; position: relative">
+      <div id="restart-note" class="hidden" role="alert"></div>
+      <div style="display: flex; gap: 10px">
+        <button class="primary hidden" id="review-btn" style="height: 44px; padding: 0 18px 0 24px; font-size: 16px; display: flex; align-items: center; gap: 6px">Return to results <svg width="18" height="18" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg></button>
+        <button class="primary" id="start-btn" style="height: 44px; padding: 0 28px; font-size: 16px" disabled>Start reading</button>
+      </div>
+      <div class="note" style="border: none; padding: 0"><svg width="16" height="16" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#52525B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6" /><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /><path d="M8 11v-4a4 4 0 1 1 8 0v4" /></svg> <span>Works offline.</span></div>
+    </div>
+  </div>
+</main>
+
+<!-- ============ Progress ============ -->
+<div id="progress" class="hidden" role="status" aria-live="polite">
+  <div class="progress-card">
+    <div style="font-size: 16px; font-weight: 600" id="progress-title">Reading…</div>
+    <div class="bar"><span id="progress-bar"></span></div>
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <span style="font-size: 13px; color: var(--soft)" id="progress-eta">This can take a few seconds a page.</span>
+      <button class="btn small" id="cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Results view ============ -->
+<section id="results" class="view hidden">
+  <div class="toolbar">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <button class="btn small" id="back-btn" title="Back to the start page. Your work is kept."><svg width="16" height="16" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 6l-6 6l6 6" /></svg> Back</button>
+      <span class="tag" id="res-spelling"></span>
+      <div style="display: flex; align-items: center; gap: 6px">
+        <button class="btn icon-btn" id="prev-btn" aria-label="Previous page"><svg width="16" height="16" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 6l-6 6l6 6" /></svg></button>
+        <span style="font-size: 14px; min-width: 110px; text-align: center" id="page-label"></span>
+        <button class="btn icon-btn" id="next-btn" aria-label="Next page"><svg width="16" height="16" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg></button>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center">
+      <span id="saved" style="font-size: 13px"></span>
+      <button class="btn small" id="name-btn" title="Choose the file name and numbering">Files: <span id="name-short" style="font-weight: 600"></span></button>
+      <button class="btn small" id="copy-btn">Copy</button>
+      <button class="btn small" id="save-page-btn">Save page</button>
+      <button class="primary small" id="save-all-btn" style="height: 36px; padding: 0 16px; font-size: 14px">Save all pages</button>
+    </div>
+    <div id="name-pop" class="hidden" role="dialog" aria-label="File names">
+      <div style="font-weight: 600">File names</div>
+      <label style="display: flex; align-items: center; gap: 10px">Name <input id="file-name" style="flex: 1" spellcheck="false"></label>
+      <label style="display: flex; align-items: center; gap: 10px">Number the pages from <input id="file-start" type="number" min="0" step="1" style="width: 80px"></label>
+      <div class="example" id="name-example"></div>
+      <div style="display: flex; justify-content: flex-end"><button class="btn small" id="name-done">Done</button></div>
+    </div>
+  </div>
+  <div class="panes">
+    <div class="pane">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+        <div class="pane-title">SCANNED PAGE</div>
+        <div class="zoom" aria-label="Zoom">
+          <button class="btn" id="zoom-out" aria-label="Zoom out">−</button>
+          <span id="zoom-level">Fit</span>
+          <button class="btn" id="zoom-in" aria-label="Zoom in">+</button>
+          <button class="btn" id="zoom-fit">Fit width</button>
+          <button class="btn" id="zoom-actual">100%</button>
+        </div>
+      </div>
+      <div class="scan" id="scan"><img id="scan-img" alt="The scanned page"></div>
+      <div style="font-size: 12px; color: var(--soft)">Pinch or hold ⌘ and scroll to zoom; drag to move around the page.</div>
+    </div>
+    <div class="pane">
+      <div class="tabs" role="tablist" id="tabs">
+        <button role="tab" data-tab="text" aria-selected="true" id="tab-text">Text</button>
+        <button role="tab" data-tab="modern" aria-selected="false" id="tab-modern">Modern spelling</button>
+      </div>
+      <div class="chars" id="chars" aria-label="Special characters"></div>
+      <textarea id="text" spellcheck="false" aria-label="The text read from the page"></textarea>
+      <div style="font-size: 12px; color: var(--soft)">Correct the text here; your changes are kept when you save.</div>
+    </div>
+  </div>
+  <div class="statusbar"><span id="st-model"></span><span id="st-fix"></span><span id="st-folder"></span><span id="st-note" style="color: #B45309"></span></div>
+</section>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const state = { fileName: "", fileStart: 1, spelling: "modern", paths: [], index: 0, count: 0, tab: "text", page: null, oldStyle: false, settings: {}, zoom: 1,
+  source: "", dirty: false, confirmRestart: false };
+let api = null;
+
+function showBanner(msg) { const b = $("#banner"); b.textContent = msg; b.classList.toggle("hidden", !msg); }
+function fileName(p) { return p.split("/").pop(); }
+
+async function refresh() {
+  const s = await api.status();
+  state.settings = s.settings;
+  const tick = (ok, name) => `<span><span class="${ok ? "ok" : "missing"}" style="font-weight: 700">${ok ? "✓" : "✗"}</span> ${name}</span>`;
+  $("#installed").innerHTML = tick(s.models.modern, "twi") + tick(s.models.basel1879, "twi_1879") +
+    (s.tesseract ? `<span style="color: var(--soft)">${s.tesseract_version}</span>` : `<span class="missing">Tesseract not found</span>`);
+  $("#tess-path").textContent = s.tesseract || "Not found";
+  $("#wordlist-note").textContent = s.word_list ? "Word list for the l → i fix: found." :
+    "Word list for the l → i fix: not found, so that fix is off. Run `python download.py` in the project folder once to make it.";
+  $("#opt-fix").checked = s.settings.fix_il; $("#opt-modern").checked = s.settings.modern_copy;
+  $("#opt-fast").checked = s.settings.fast !== false;
+  $("#out-path").textContent = s.settings.output;
+  if (!s.tesseract) { showBanner("Tesseract was not found. Install Tesseract 5, or open Settings and choose where it is."); $("#settings").classList.remove("hidden"); }
+  else showBanner("");
+}
+
+function setSpelling(value) {
+  state.spelling = value;
+  document.querySelectorAll(".spell").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.spelling === value)));
+}
+
+function setPaths(paths) {
+  state.paths = paths;
+  const drop = $("#drop");
+  drop.classList.toggle("has-files", paths.length > 0);
+  $("#drop-title").textContent = paths.length === 0 ? "or drop a PDF or scanned pages here" :
+    paths.length === 1 ? fileName(paths[0]) : `${paths.length} items chosen`;
+  $("#drop-sub").textContent = paths.length ? "Ready. Press Start reading, or choose again to change." : "PDF, PNG, JPG or TIFF";
+  $("#start-btn").disabled = paths.length === 0;
+  state.newFiles = state.count > 0 && paths.length > 0;   // Chosen after a reading: Start leads again.
+  state.fileName = defaultName(); state.fileStart = 1; syncNames();   // New scans: name them after the PDF.
+  resetRestart(); updateButtons();
+}
+function updateButtons() {
+  const has = state.count > 0, leadStart = !has || state.newFiles;
+  $("#review-btn").classList.toggle("hidden", !has);
+  $("#review-btn").classList.toggle("outline", has && leadStart);
+  $("#start-btn").classList.toggle("muted", !leadStart);
+}
+function resetRestart() {
+  state.confirmRestart = false;
+  $("#start-btn").textContent = "Start reading";
+  $("#restart-note").classList.add("hidden");
+}
+function showReadNote() {   // On the start page after a reading: say how to get back to it.
+  if (!state.count) return;
+  $("#drop-sub").textContent = `Read: ${state.count} page${state.count === 1 ? "" : "s"}. Your work is kept — press Return to results. ` +
+    "Start reading again replaces it.";
+}
+window.onDropped = (paths) => setPaths(paths);
+
+// Called from Python while reading.
+window.onProgress = (done, total, message) => {
+  const box = $("#progress");
+  if (box.classList.contains("hidden")) {   // A new reading: reset the card.
+    box.classList.remove("hidden");
+    $("#cancel-btn").disabled = false; $("#cancel-btn").textContent = "Cancel";
+    state.readStart = null;
+  }
+  if (state.stopping) return;
+  $("#progress-title").textContent = message;
+  $("#progress-bar").style.width = total ? `${Math.max(2, Math.round((done / total) * 100))}%` : "2%";
+  if (total && done === 0) { state.readStart = Date.now(); $("#progress-eta").textContent = "Working out the time left…"; }
+  else if (total && state.readStart && done >= 2) {
+    const left = ((Date.now() - state.readStart) / done) * (total - done) / 1000;
+    $("#progress-eta").textContent = left < 60 ? "Less than a minute left" :
+      `About ${Math.round(left / 60)} minute${Math.round(left / 60) === 1 ? "" : "s"} left`;
+  }
+};
+function hideProgress() { $("#progress").classList.add("hidden"); state.stopping = false; $("#progress-eta").textContent = "This can take a few seconds a page."; }
+window.onError = (message) => { hideProgress(); showBanner("Reading stopped: " + message); };
+window.onDone = (count, source, label, model, fixed, oldStyle, note, seconds) => {
+  hideProgress();
+  $("#st-note").textContent = note || "";
+  state.count = count; state.index = 0; state.oldStyle = oldStyle;
+  document.title = `Twi OCR — ${source}`;
+  $("#res-spelling").textContent = label; $("#res-spelling").classList.toggle("basel", oldStyle);
+  $("#tab-text").textContent = oldStyle ? "As printed (1879)" : "Text";
+  $("#tab-modern").classList.toggle("hidden", !oldStyle);
+  const took = seconds >= 60 ? `${Math.floor(seconds / 60)} min ${seconds % 60} s` : `${seconds} s`;
+  $("#st-model").textContent = `Model: ${model}` + (seconds !== undefined ? ` · read in ${took} (${(seconds / count).toFixed(1)} s a page)` : "");
+  $("#st-fix").textContent = oldStyle ? "Clean-up: on" : `l → i fix: ${fixed ? "on" : "off"}`;
+  $("#st-folder").textContent = `Saves to ${state.settings.output}`;
+  state.source = source; state.dirty = false; resetRestart();
+  state.newFiles = false; updateButtons();
+  if (!state.fileName) state.fileName = cleanName(source.replace(/\.[^.]+$/, "")) || "pages";
+  showResults(0);
+};
+
+async function showResults(index) {
+  state.index = index; state.tab = "text";
+  state.page = await api.page(index);
+  $("#main").classList.add("hidden"); $("#results").classList.remove("hidden");
+  $("#scan-img").onload = () => applyZoom(); $("#scan-img").src = state.page.image;
+  $("#page-label").textContent = `Page ${index + 1} of ${state.count}`;
+  $("#prev-btn").disabled = index === 0; $("#next-btn").disabled = index >= state.count - 1;
+  showNames();
+  $("#saved").textContent = state.page.error ? "Tesseract could not read this page; type the text in." : "";
+  showTab("text");
+}
+
+// ---- Zoom and pan on the scan. zoom 1 = the page fits the pane's width.
+function fitWidth() { return Math.max(100, $("#scan").clientWidth - 26); }
+function applyZoom(anchor) {
+  const scan = $("#scan"), img = $("#scan-img");
+  const before = img.clientWidth || fitWidth();
+  const ax = anchor ? anchor.x : scan.clientWidth / 2, ay = anchor ? anchor.y : scan.clientHeight / 2;
+  const fx = (scan.scrollLeft + ax) / before, fy = (scan.scrollTop + ay) / (img.clientHeight || 1);
+  img.style.width = Math.round(fitWidth() * state.zoom) + "px";
+  scan.scrollLeft = fx * img.clientWidth - ax; scan.scrollTop = fy * img.clientHeight - ay;
+  const actual = img.naturalWidth ? img.clientWidth / img.naturalWidth : 0;
+  $("#zoom-level").textContent = Math.abs(state.zoom - 1) < 0.01 ? "Fit" : Math.round(actual * 100) + "%";
+}
+function setZoom(z, anchor) { state.zoom = Math.min(8, Math.max(0.4, z)); applyZoom(anchor); }
+
+function showTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+  $("#text").value = state.page[tab] || "";
+  showChars(state.oldStyle && tab === "text" ? "basel1879" : "modern");
+}
+
+// ---- Special characters. Letters are inserted at the cursor; marks (shown on a
+// dotted circle) are combining characters that go on the letter before the cursor.
+const LINE = "\u0332";
+const CHARS = {
+  modern: {
+    letters: ["ɛ", "Ɛ", "ɔ", "Ɔ"],
+    marks: [["\u0301", "High tone"], ["\u0300", "Low tone"]],
+  },
+  basel1879: {
+    letters: ["e" + LINE, "o" + LINE, "E" + LINE, "O" + LINE, "ṅ", "w̌", "ã", "ẽ", "ĩ", "õ", "ũ"],   // ẹ, ọ: use the dot-below mark
+    marks: [["\u0303", "Tilde (nasal)"], ["\u0301", "Acute (high tone)"], ["\u0300", "Grave (low tone)"],
+            ["\u0304", "Macron (long)"], ["\u0306", "Breve (short)"], ["\u030C", "Caron (as on w̌)"],
+            ["\u0323", "Dot below"], [LINE, "Line below (as on e̲, o̲)"]],
+  },
+};
+function showChars(kind) {
+  const bar = $("#chars"), set = CHARS[kind];
+  bar.innerHTML = "";
+  const row = (label) => {
+    const r = document.createElement("div"); r.className = "chars-row";
+    r.innerHTML = `<span class="chars-label">${label}</span>`; bar.appendChild(r); return r;
+  };
+  const letters = row("Letters"), marks = row("Marks");
+  const add = (box, text, shown, title, isMark) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = shown; b.title = title; b.setAttribute("aria-label", title);
+    b.addEventListener("mousedown", (e) => e.preventDefault());   // keep the cursor in the text
+    b.addEventListener("click", () => (isMark ? applyMark(text) : insertText(text)));
+    box.appendChild(b);
+  };
+  set.letters.forEach((c) => add(letters, c, c, c.normalize("NFC")));
+  set.marks.forEach(([m, name]) => add(marks, m, "\u25CC" + m, name + " — goes on the letter before the cursor", true));
+  const hint = document.createElement("span"); hint.id = "chars-hint"; hint.className = "chars-label";
+  hint.style.width = "auto"; hint.style.marginLeft = "8px"; marks.appendChild(hint);
+}
+// A mark goes on the letter just before the cursor. Each letter keeps one mark below
+// and one mark above, except that a tilde can sit with an acute or grave (ã́, ẽ̀).
+// Clicking a mark the letter already has takes it off.
+const BELOW = new Set(["\u0323", LINE]), TILDE = "\u0303", TONES = new Set(["\u0301", "\u0300"]);
+function keepsWith(old, added) {   // Can mark `old` stay when `added` is put on the same letter?
+  if (BELOW.has(old) || BELOW.has(added)) return BELOW.has(old) !== BELOW.has(added);
+  return (old === TILDE && TONES.has(added)) || (TONES.has(old) && added === TILDE);
+}
+let hintTimer = null;
+function showHint(msg) {
+  const h = $("#chars-hint"); if (!h) return;
+  h.textContent = msg; clearTimeout(hintTimer); hintTimer = setTimeout(() => { h.textContent = ""; }, 3500);
+}
+function applyMark(mark) {
+  const ta = $("#text"), pos = ta.selectionEnd;
+  const before = ta.value.slice(0, pos), after = ta.value.slice(pos);
+  const found = before.match(/\p{L}\p{M}*$/u);
+  if (!found) { ta.focus(); showHint("Put the cursor just after a letter first."); return; }
+  const parts = [...found[0].normalize("NFD")];
+  const base = parts[0];
+  let marks = parts.slice(1);
+  if (mark === LINE && !/^[eoEO]$/.test(base)) { ta.focus(); showHint("The line below only goes on e or o."); return; }
+  if (marks.includes(mark)) {
+    marks = marks.filter((m) => m !== mark);   // second click: take it off
+  } else {
+    marks = marks.filter((m) => keepsWith(m, mark));   // replace marks that can't share the letter
+    marks.push(mark);
+  }
+  const rank = (m) => (BELOW.has(m) ? 0 : m === TILDE ? 1 : 2);   // tilde sits under an accent
+  marks.sort((a, b) => rank(a) - rank(b));
+  const letter = (base + marks.join("")).normalize("NFC");
+  const start = before.slice(0, before.length - found[0].length) + letter;
+  ta.value = start + after;
+  ta.focus(); ta.selectionStart = ta.selectionEnd = start.length;
+  if (state.page) state.page[state.tab] = ta.value;
+  state.dirty = true;
+  $("#saved").textContent = ""; showHint("");
+}
+function insertText(chars) {
+  const ta = $("#text");
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const before = (ta.value.slice(0, start) + chars).normalize("NFC");
+  ta.value = before + ta.value.slice(end);
+  ta.focus(); ta.selectionStart = ta.selectionEnd = before.length;
+  if (state.page) state.page[state.tab] = ta.value;
+  state.dirty = true;
+  $("#saved").textContent = "";
+}
+
+// ---- File names: name_001.txt, name_002.txt, … numbered in page order.
+function cleanName(name) { return name.normalize("NFC").trim().replace(/[^\p{L}\p{M}\p{N} ._-]/gu, "_").replace(/^[ .]+|[ .]+$/g, "").slice(0, 80); }
+function fileStem(index) {
+  const width = Math.max(3, String(state.fileStart + state.count - 1).length);
+  return `${state.fileName}_${String(state.fileStart + index).padStart(width, "0")}`;
+}
+function defaultName() {
+  const first = state.paths.length === 1 ? fileName(state.paths[0]) : state.source || "";
+  return cleanName(first.replace(/\.(pdf|png|jpe?g|tiff?|bmp|webp)$/i, "")) || "pages";
+}
+function syncNames() {   // The start page's fields and the results page's panel show the same name.
+  for (const id of ["#main-name", "#file-name"]) if (document.activeElement !== $(id)) $(id).value = state.fileName;
+  for (const id of ["#main-start", "#file-start"]) if (document.activeElement !== $(id)) $(id).value = state.fileStart;
+  if (state.count) showNames();
+}
+function readNames(nameBox, startBox) {
+  state.fileName = cleanName(nameBox.value) || defaultName();
+  const n = parseInt(startBox.value, 10); state.fileStart = Number.isFinite(n) && n >= 0 ? n : 1;
+  syncNames();
+}
+function showNames() {
+  $("#name-short").textContent = `${fileStem(0)}…`;
+  const extra = state.oldStyle && state.settings.modern_copy !== false ? ` (and <code>${fileStem(0)}.modern.txt</code>)` : "";
+  $("#name-example").innerHTML = `Pages are saved as <code>${fileStem(0)}.txt</code>${extra}, <code>${fileStem(1)}.txt</code>, … ` +
+    `<code>${fileStem(state.count - 1)}.txt</code>.<br>This page: <code>${fileStem(state.index)}.txt</code><br>` +
+    `Folder: ${String(state.settings.output).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c])}/${state.fileName}`;
+}
+
+async function keepEdits() {
+  if (state.page) { state.page[state.tab] = $("#text").value; await api.update_text(state.index, state.tab, $("#text").value); }
+}
+
+window.addEventListener("pywebviewready", async () => {
+  api = window.pywebview.api;
+  await refresh();
+  document.querySelectorAll(".spell").forEach((b) => b.addEventListener("click", () => setSpelling(b.dataset.spelling)));
+  document.querySelectorAll("[data-choose]").forEach((b) => b.addEventListener("click", async () => {
+    const picked = await api.choose(b.dataset.choose); if (picked.length) setPaths(picked);
+  }));
+  document.querySelectorAll("[data-link]").forEach((b) => b.addEventListener("click", () => api.open_link(b.dataset.link)));
+  $("#settings-btn").addEventListener("click", () => $("#settings").classList.toggle("hidden"));
+  $("#refresh-btn").addEventListener("click", refresh);
+  $("#tess-btn").addEventListener("click", async () => { await api.choose_tesseract(); await refresh(); });
+  $("#out-btn").addEventListener("click", async () => { const s = await api.choose_output(); state.settings = s; $("#out-path").textContent = s.output; });
+  $("#opt-fix").addEventListener("change", (e) => api.set_option("fix_il", e.target.checked));
+  $("#opt-modern").addEventListener("change", (e) => api.set_option("modern_copy", e.target.checked));
+  $("#opt-fast").addEventListener("change", (e) => api.set_option("fast", e.target.checked));
+  $("#start-btn").addEventListener("click", async () => {
+    if (state.count && state.dirty && !state.confirmRestart) {
+      state.confirmRestart = true;
+      $("#start-btn").textContent = "Start anyway";
+      const note = $("#restart-note");
+      note.textContent = `Starting again replaces the results for ${state.source}, and you have changes that are not saved. ` +
+        "Press Return to results and Save all pages to keep them, or press Start anyway.";
+      note.classList.remove("hidden");
+      return;
+    }
+    showBanner(""); resetRestart();
+    const r = await api.start(state.paths, state.spelling);
+    if (!r.ok) showBanner(r.error); else window.onProgress(0, 0, "Starting…");
+  });
+  $("#review-btn").addEventListener("click", () => { resetRestart(); showResults(state.index); });
+  $("#cancel-btn").addEventListener("click", () => {
+    state.stopping = true;
+    $("#cancel-btn").disabled = true; $("#progress-title").textContent = "Stopping…";
+    $("#progress-eta").textContent = "Keeping the pages already read.";
+    api.cancel();
+  });
+  $("#back-btn").addEventListener("click", async () => {
+    await keepEdits(); $("#results").classList.add("hidden"); $("#main").classList.remove("hidden"); resetRestart(); showReadNote();
+  });
+  $("#prev-btn").addEventListener("click", async () => { await keepEdits(); showResults(state.index - 1); });
+  $("#next-btn").addEventListener("click", async () => { await keepEdits(); showResults(state.index + 1); });
+  document.querySelectorAll("#tabs button").forEach((b) => b.addEventListener("click", async () => { await keepEdits(); showTab(b.dataset.tab); }));
+  $("#text").addEventListener("blur", keepEdits);
+  $("#text").addEventListener("input", () => { state.dirty = true; });
+  $("#copy-btn").addEventListener("click", async () => { await navigator.clipboard.writeText($("#text").value); $("#saved").textContent = "Copied"; });
+  const save = async (index) => {
+    await keepEdits();
+    const r = await api.save(index, state.fileName, state.fileStart);
+    if (index === null) state.dirty = false;
+    const what = index === null ? `${r.files} files` : r.first + (r.files > 1 ? " and its modern copy" : "");
+    $("#saved").innerHTML = `Saved ${what} · <a href="#" id="reveal">Show in Finder</a>`;
+    $("#reveal").addEventListener("click", (e) => { e.preventDefault(); api.reveal(r.folder); });
+  };
+  $("#save-page-btn").addEventListener("click", () => save(state.index));
+  const pop = $("#name-pop");
+  $("#name-btn").addEventListener("click", () => {
+    if (!pop.classList.contains("hidden")) { pop.classList.add("hidden"); return; }
+    $("#file-name").value = state.fileName; $("#file-start").value = state.fileStart;
+    pop.classList.remove("hidden"); $("#file-name").focus(); $("#file-name").select();
+  });
+  for (const [nameBox, startBox] of [["#main-name", "#main-start"], ["#file-name", "#file-start"]]) {
+    for (const box of [nameBox, startBox]) {
+      $(box).addEventListener("input", () => readNames($(nameBox), $(startBox)));
+      $(box).addEventListener("blur", () => { $(box).value = box.endsWith("name") ? state.fileName : state.fileStart; });
+    }
+  }
+  $("#name-done").addEventListener("click", () => pop.classList.add("hidden"));
+  pop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === "Escape") pop.classList.add("hidden"); });
+  document.addEventListener("mousedown", (e) => {
+    if (!pop.classList.contains("hidden") && !pop.contains(e.target) && !$("#name-btn").contains(e.target)) pop.classList.add("hidden");
+  });
+  $("#zoom-in").addEventListener("click", () => setZoom(state.zoom * 1.25));
+  $("#zoom-out").addEventListener("click", () => setZoom(state.zoom / 1.25));
+  $("#zoom-fit").addEventListener("click", () => setZoom(1));
+  $("#zoom-actual").addEventListener("click", () => { const img = $("#scan-img"); if (img.naturalWidth) setZoom(img.naturalWidth / fitWidth()); });
+  const scan = $("#scan");
+  scan.addEventListener("wheel", (e) => {   // trackpad pinch arrives as ctrl+wheel; also ⌘+scroll
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const r = scan.getBoundingClientRect();
+    setZoom(state.zoom * Math.exp(-e.deltaY * 0.01), { x: e.clientX - r.left, y: e.clientY - r.top });
+  }, { passive: false });
+  let drag = null;
+  scan.addEventListener("mousedown", (e) => { drag = { x: e.clientX, y: e.clientY, l: scan.scrollLeft, t: scan.scrollTop }; scan.classList.add("dragging"); });
+  window.addEventListener("mousemove", (e) => { if (drag) { scan.scrollLeft = drag.l - (e.clientX - drag.x); scan.scrollTop = drag.t - (e.clientY - drag.y); } });
+  window.addEventListener("mouseup", () => { drag = null; scan.classList.remove("dragging"); });
+  window.addEventListener("resize", () => { if (!$("#results").classList.contains("hidden")) applyZoom(); });
+  document.addEventListener("keydown", (e) => {
+    if (!e.metaKey || $("#results").classList.contains("hidden") || document.activeElement === $("#text")) return;
+    if (e.key === "=" || e.key === "+") { e.preventDefault(); setZoom(state.zoom * 1.25); }
+    else if (e.key === "-") { e.preventDefault(); setZoom(state.zoom / 1.25); }
+    else if (e.key === "0") { e.preventDefault(); setZoom(1); }
+  });
+  $("#save-all-btn").addEventListener("click", () => save(null));
+});
+</script>
+</body>
+</html>

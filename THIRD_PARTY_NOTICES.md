@@ -16,7 +16,10 @@ This project's own code is MIT-licensed. It depends on, or was built with, the c
 | [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz) | Edit distance for scoring | MIT |
 | [openpyxl](https://openpyxl.readthedocs.io/) | Reading and editing the answer key | MIT |
 | [Hugging Face datasets](https://github.com/huggingface/datasets) and [huggingface_hub](https://github.com/huggingface/huggingface_hub) | Downloading GhanaNLP data | Apache-2.0 |
-| [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) and PDFium | Reading PDFs (`ocr.py`, `pdf_to_png.py`) | Apache-2.0 or BSD-3-Clause; PDFium BSD-style |
+| [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) and PDFium | Reading PDFs (`ocr.py`, `pdf_to_png.py`, the app) | Apache-2.0 or BSD-3-Clause; PDFium BSD-style |
+| [pywebview](https://github.com/r0x0r/pywebview) | The desktop app's window (`app/`) | BSD-3-Clause |
+| [PyInstaller](https://pyinstaller.org/) | Building the desktop app | GPL-2.0 with an exception that allows distributing the built app under any licence |
+| [Tabler Icons](https://tabler.io/icons) | Icons in the desktop app (`app/ui/index.html`); included | MIT, see `app/ui/icons-LICENSE.txt` |
 
 ## Models
 
@@ -44,4 +47,4 @@ The [Ewe Tesseract OCR](https://huggingface.co/NissiKlaus/ewe-tesseract-ocr) mod
 | [Charis SIL](https://software.sil.org/charis/) | Rendering training images | SIL Open Font License 1.1 (Reserved Font Names "Charis", "SIL") |
 | [Noto Serif](https://fonts.google.com/noto/specimen/Noto+Serif) | Rendering training images | SIL Open Font License 1.1 |
 
-The fonts are not included; download them from the links above. If they are ever added to the repository, their OFL licence files must be included too.
+The fonts in `fonts/` are not included; download them from the links above. One exception: `app/ui/fonts/Charis-Regular.ttf` is included, unchanged, so the desktop app can show the 1879 marks, with its licence in `app/ui/fonts/OFL.txt`.

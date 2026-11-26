@@ -11,6 +11,8 @@ tesstrain/
 models/*.traineddata
 eval/christaller_1879/ocr/
 models_README.md
+app/build/
+app/dist/
 
 # Python and macOS clutter
 .venv/

@@ -27,6 +27,8 @@ Usage:
     python postcorrect.py --model twi_v3 # results of another model
 """
 
+from __future__ import annotations   # Type hints below name pandas without importing it.
+
 import argparse
 import collections
 import itertools
@@ -34,8 +36,8 @@ import re
 import unicodedata
 from pathlib import Path
 
-import pandas as pd
-from rapidfuzz.distance import Levenshtein
+# pandas and rapidfuzz are imported inside the functions that score results,
+# so ocr.py and the desktop app can use the correction alone without them.
 
 # --- Configuration -----------------------------------------------------------
 
@@ -144,6 +146,7 @@ def correct_text(text: str, vocab: collections.Counter) -> str:
 
 def special_correct(reference: str, hypothesis: str) -> int:
     """Count ɛ/ɔ/Ɛ/Ɔ in the reference that fall in unchanged alignment blocks."""
+    from rapidfuzz.distance import Levenshtein
     return sum(
         sum(c in TWI_SPECIAL_CHARS for c in reference[a:b])
         for tag, a, b, _, _ in Levenshtein.opcodes(reference, hypothesis)
@@ -153,6 +156,7 @@ def special_correct(reference: str, hypothesis: str) -> int:
 
 def summarize(details: pd.DataFrame, ocr_column: str) -> str:
     """Return CER and ɛ/ɔ accuracy for one OCR column as a printable line."""
+    from rapidfuzz.distance import Levenshtein
     edits = sum(Levenshtein.distance(r, h) for r, h in zip(details["reference"], details[ocr_column]))
     special = sum(special_correct(r, h) for r, h in zip(details["reference"], details[ocr_column]))
     cer = edits / details["reference"].str.len().sum()
@@ -186,6 +190,8 @@ def print_change_tally(details: pd.DataFrame) -> None:
 
 def main() -> None:
     """Correct the OCR column of one model's results and report the effect."""
+    import pandas as pd
+    from rapidfuzz.distance import Levenshtein
     parser = argparse.ArgumentParser(description="Twi word-list post-correction.")
     parser.add_argument("--public", action="store_true",
                         help="Build the word list from GhanaNLP text only")
