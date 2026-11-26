@@ -76,6 +76,8 @@ The Windows app is built on GitHub, so no Windows computer is needed to make it:
 
 To use it, unzip the folder and open **Twi OCR.exe**. Tesseract is included, so nothing else needs installing. Windows 10 and 11 already have the WebView2 component the window uses. The app is not signed, so the first time Windows may show "Windows protected your PC": choose **More info**, then **Run anyway**.
 
+Windows marks downloaded files as coming from the internet, and unzipping passes the mark to every file inside; .NET then refuses to load the window's components, and an app without a fix stops with "Failed to resolve Python.Runtime.Loader.Initialize". The app removes the mark from its own files when it starts. If that error still appears (for example, the folder is somewhere the app cannot change), unblock the zip before unzipping (right-click it, **Properties**, tick **Unblock**, **OK**), or run in PowerShell: `Get-ChildItem -Path "<the unzipped folder>" -Recurse | Unblock-File`.
+
 Settings are saved in `%APPDATA%\Twi OCR\settings.json`, and text by default in `Documents\Twi OCR\`. Page images are sent to Tesseract directly rather than through files, because Tesseract on Windows may not open paths that contain letters such as ɛ or ɔ. Faster reading keeps its smaller model copies in `%APPDATA%\Twi OCR\fast-models\`; if your Windows user name contains such letters and every page fails with it on, untick Faster reading.
 
 ## What people need (Mac)

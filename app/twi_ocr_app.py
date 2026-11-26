@@ -587,7 +587,27 @@ def bind_drop(window, api: Api) -> None:
         zone.events.drop += DOMEventHandler(on_drop, True, True)
 
 
+def unblock_own_files() -> None:
+    """Windows: remove the "downloaded from the internet" mark from the app's own files.
+
+    Windows marks downloaded files, and unzipping passes the mark to every file
+    inside. .NET then refuses to load the window library's components
+    (pythonnet's Python.Runtime.dll, WebView2), and the app stops with "Failed to
+    resolve Python.Runtime.Loader.Initialize". The mark is a hidden
+    Zone.Identifier stream next to each file; deleting it is what "Unblock"
+    in a file's Properties does.
+    """
+    for path in APP_DIR.rglob("*"):
+        if path.suffix.lower() in {".dll", ".exe", ".pyd"}:
+            try:
+                os.remove(f"{path}:Zone.Identifier")
+            except OSError:
+                pass   # Not marked, or not allowed: nothing to do.
+
+
 def main() -> None:
+    if IS_WINDOWS and FROZEN:
+        unblock_own_files()
     if "--check" in sys.argv:   # Print what the app can find, without opening a window.
         status = Api().status()
         print(json.dumps({k: v for k, v in status.items() if k != "settings"}, indent=2))
