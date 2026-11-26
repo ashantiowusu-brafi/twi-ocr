@@ -44,6 +44,7 @@ import orthography   # noqa: E402  (needs the path above)
 UI_FILE = APP_DIR / "ui" / "index.html"
 MODELS = PROJECT / "models"
 WORD_LIST = PROJECT / "data" / "twi_ghananlp.txt"
+ENGLISH_LIST = PROJECT / "wordlists" / "english_words.txt"   # For the English check (issue T7).
 IS_WINDOWS = sys.platform == "win32"
 IS_MAC = sys.platform == "darwin"
 if IS_WINDOWS:   # Settings live where each system keeps app settings.
@@ -270,13 +271,19 @@ def preview(page: dict) -> str:
 
 
 def load_corrector():
-    """Return the l -> i fixer from postcorrect.py, or None without a word list."""
+    """Return the page corrector from postcorrect.py, or None without the Twi word list.
+
+    It returns (text, changes): the l -> i fixes on Twi lines and, with the
+    English word list, the English check on English lines (it Is -> it is,
+    wil! -> will, ɔver -> over); each change is listed so it can be undone.
+    """
     if not WORD_LIST.exists():
         return None
     import postcorrect as pc
     pc.CONFUSIONS = pc.SWAP_SETS["i"]   # Only l/I/1 -> i; never e/ɛ or o/ɔ.
     vocab = pc.build_vocabulary([WORD_LIST])
-    return lambda text: pc.correct_text(text, vocab)
+    english = pc.load_english_words(ENGLISH_LIST) or None
+    return lambda text: pc.correct_page(text, vocab, english)
 
 
 # --- The bridge the window calls ---------------------------------------------
@@ -304,6 +311,7 @@ class Api:
             "tesseract_version": tesseract_version(tesseract) if tesseract else None,
             "models": {key: (MODELS / f"{s['model']}.traineddata").exists() for key, s in SPELLINGS.items()},
             "word_list": WORD_LIST.exists(),
+            "english_list": ENGLISH_LIST.exists(),
             "workers": WORKERS, "cores": os.cpu_count(),
             "platform": "windows" if IS_WINDOWS else "mac" if IS_MAC else "linux",
             "settings": self._settings,
@@ -447,12 +455,13 @@ class Api:
         finally:
             if temp:
                 temp.unlink(missing_ok=True)
+        fixes: list[dict] = []
         if correct:
-            text = correct(text)
+            text, fixes = correct(text)
         if old_style:
             text = orthography.cleanup_ocr(text)
         return {
-            **page, "text": text.rstrip() + "\n", "error": None,
+            **page, "text": text.rstrip() + "\n", "error": None, "fixes": fixes,
             "modern": orthography.to_modern(text).rstrip() + "\n" if old_style else None,
         }
 
@@ -520,12 +529,15 @@ class Api:
     def page(self, index: int) -> dict:
         page = self._pages[index]
         return {"name": page["name"], "image": preview(page), "text": page["text"],
-                "modern": page["modern"], "error": page.get("error"), "index": index, "count": len(self._pages)}
+                "modern": page["modern"], "error": page.get("error"), "fixes": page.get("fixes", []),
+                "index": index, "count": len(self._pages)}
 
-    def update_text(self, index: int, which: str, text: str) -> None:
-        """Keep a correction the user typed into the text box."""
+    def update_text(self, index: int, which: str, text: str, fixes: list | None = None) -> None:
+        """Keep a correction the user typed into the text box (and the fixes list, if given)."""
         if which in {"text", "modern"} and 0 <= index < len(self._pages):
             self._pages[index][which] = text
+            if fixes is not None and which == "text":
+                self._pages[index]["fixes"] = fixes
 
     def default_name(self) -> str:
         """The file name the results start with: the PDF's or folder's name."""

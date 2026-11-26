@@ -46,6 +46,7 @@ pyinstaller --noconfirm --windowed --name "Twi OCR" `
     --add-data "$Root\models\twi.traineddata;models" `
     --add-data "$Root\models\twi_1879.traineddata;models" `
     --add-data "$Root\orthography\christaller_1879.tsv;orthography" `
+    --add-data "$Root\wordlists\english_words.txt;wordlists" `
     --add-data "$Root\$Vendor;tesseract" `
     @Extra `
     app\twi_ocr_app.py

@@ -43,7 +43,10 @@ from pathlib import Path
 
 GHANANLP_TXT = Path("data/twi_ghananlp.txt")
 BIBLE_TXT = Path("private/twi_bible.txt")
-UG_TXT = Path("private/twi_ug.txt")   # From prepare_ug.py; private only.
+UG_TXT = Path("private/twi_ug.txt")
+# English words for the English check (issue T7): the lowercase words of
+# Tesseract's English model (tessdata_best eng.traineddata, Apache-2.0).
+ENGLISH_TXT = Path(__file__).resolve().parent / "wordlists" / "english_words.txt"   # From prepare_ug.py; private only.
 DETAILS_DIR = Path("private/eval_details")   # Written by compare_models.py.
 OUT_CSV = Path("private/postcorrect_details.csv")
 
@@ -140,6 +143,142 @@ def correct_word(word: str, vocab: collections.Counter) -> str:
 def correct_text(text: str, vocab: collections.Counter) -> str:
     """Correct every word in a line, keeping spacing and punctuation intact."""
     return WORD.sub(lambda m: correct_word(m.group(0), vocab), text)
+
+
+# --- Correcting a whole page (Twi and English lines) ------------------------
+#
+# Bu Me Bɛ prints English beside the Twi, and the Twi models misread the italic
+# English in their own ways (issue T7 in ORTHOGRAPHY.md). correct_page() looks
+# at each line: on a Twi line it makes the l -> i fixes above; on an English
+# line it skips them (they were built for Twi) and fixes only clear English
+# mistakes. Every change is returned with its position, so it can be shown and
+# undone. Doubled punctuation (";:", ".,") is only flagged, because "etc.," is
+# correct English.
+
+OPEN_TO_PLAIN = str.maketrans("ɔɛƆƐ", "oeOE")
+SMALL_CAPITAL_WORDS = {"Is": "is", "It": "it", "In": "in", "If": "if", "Its": "its"}
+# A capital Is/It/In/If/Its straight after a lowercase word, as in "coming, it Is coming".
+MID_SENTENCE_CAPITAL = re.compile(r"(?<=[a-z][,;] )(Is|It|In|If|Its)\b|(?<=[a-z] )(Is|It|In|If|Its)\b")
+# A word, which may contain "!" read for l (wil!, va!ued) or an apostrophe.
+TOKEN = re.compile(r"[^\W\d_!]+(?:[!’'][^\W\d_!]+)*!?")
+DOUBLED_PUNCTUATION = re.compile(r"[;:,.][;:,]|[;:,][.]")
+
+
+def load_english_words(path: Path = ENGLISH_TXT) -> set[str]:
+    """Return the English word list (lowercase), or an empty set if it is missing."""
+    if not path.exists():
+        return set()
+    return {w.strip() for w in path.read_text(encoding="utf-8").splitlines() if w.strip()}
+
+
+def _line_kind(line: str, english: set[str], twi: set[str]) -> tuple[int, int]:
+    """Return (English-only words, Twi-only words) in a line."""
+    words = [w.lower().replace("’", "'") for w in WORD.findall(line) if len(w) > 1]
+    eng = sum((w in english or w.translate(OPEN_TO_PLAIN) in english) and w not in twi for w in words)
+    tw = sum(w in twi and w not in english for w in words)
+    return eng, tw
+
+
+def english_lines(lines: list[str], english: set[str], twi: set[str]) -> list[bool]:
+    """Mark which lines are English: clearly English, or English-leaning next to one."""
+    counts = [_line_kind(l, english, twi) for l in lines]
+    clear = [e >= 2 and e > t for e, t in counts]
+    return [c or (e >= 1 and t == 0 and ((i > 0 and clear[i - 1]) or (i + 1 < len(lines) and clear[i + 1])))
+            for i, (c, (e, t)) in enumerate(zip(clear, counts))]
+
+
+COMMON_TWO_LETTER = {"of", "on", "or", "so", "to", "no", "go", "do", "be", "he", "me", "we", "oh"}
+
+
+def _fix_english_word(word: str, english: set[str], twi: set[str],
+                      followed_by: str) -> tuple[str, str, str] | None:
+    """Return (new word, kind, reason) for a misread English word, else None.
+
+    kind is "fix" when one reading is clear, or "check" when it is not.
+    """
+    lower = word.lower().replace("’", "'")
+    if "!" in word:
+        if word.endswith("!") and not re.match(r" [a-z]", followed_by):
+            return None   # A real "!" at the end of a clause.
+        as_l, as_t = word.replace("!", "l"), word.replace("!", "t")
+        l_ok, t_ok = as_l.lower() in english, as_t.lower() in english
+        if lower in english or len(as_l) < 4 or not (l_ok or t_ok):
+            return None
+        if l_ok and (not t_ok or as_l.lower().endswith("ll")):
+            return as_l, "fix", "! read for l"
+        if t_ok and not l_ok:   # Often an apostrophe (don!t, don't): check, don't change.
+            return word, "check", f"! may be t or an apostrophe ({as_t})"
+        return word, "check", f"! read for l or t ({as_l} or {as_t})"
+    if re.search("[ɔɛƆƐ]", word):
+        fixed = word.translate(OPEN_TO_PLAIN)
+        if lower in twi or fixed.lower() not in english:
+            return None
+        if len(fixed) == 2 and fixed.lower() not in COMMON_TWO_LETTER:
+            return None
+        return fixed, "fix", "ɔ/ɛ in an English word"
+    if word == "ir":
+        return "it", "fix", "ir read for it"
+    return None
+
+
+def correct_page(text: str, vocab: collections.Counter, english: set[str] | None = None) -> tuple[str, list[dict]]:
+    """Correct a page line by line; return the new text and a list of changes.
+
+    Each change is {"start", "end", "old", "new", "kind", "why"}: start and end
+    are positions in the returned text; kind is "fix" for a change made, or
+    "check" for a spot flagged for review (old == new). Without an English word
+    list, every line gets the l -> i fixes, as correct_text() does.
+    """
+    twi = set(vocab)
+    lines = text.split("\n")
+    is_english = english_lines(lines, english, twi) if english else [False] * len(lines)
+    out_lines, changes, offset = [], [], 0
+    for line, eng in zip(lines, is_english):
+        edits: list[tuple[int, int, str, str]] = []   # (start, end, new, why) in the original line
+        checks: list[tuple[int, int, str]] = []        # (start, end, why): flagged, not changed
+        if eng:
+            for m in TOKEN.finditer(line):
+                fix = _fix_english_word(m.group(0), english, twi, line[m.end():m.end() + 2])
+                if fix and fix[1] == "fix":
+                    edits.append((m.start(), m.end(), fix[0], fix[2]))
+                elif fix:
+                    checks.append((m.start(), m.end(), fix[2]))
+            for m in MID_SENTENCE_CAPITAL.finditer(line):
+                if not any(a <= m.start() < b for a, b, _, _ in edits):
+                    edits.append((m.start(), m.end(), SMALL_CAPITAL_WORDS[m.group(0)], "capital I read for i"))
+        else:
+            for m in WORD.finditer(line):
+                word = m.group(0)
+                new = correct_word(word, vocab)
+                if new == word and word[:2] in ("ƐE", "ƆO") and word.lower() not in twi:
+                    candidate = word[0] + word[2:]
+                    if candidate.lower() in twi:
+                        new = candidate
+                        edits.append((m.start(), m.end(), new, "letter read twice"))
+                        continue
+                if new != word:
+                    edits.append((m.start(), m.end(), new, "l read for i"))
+        edits.sort()
+        built, last, shift = [], 0, 0
+        for start, end, new, why in edits:
+            built.append(line[last:start] + new)
+            changes.append({"start": offset + start + shift, "end": offset + start + shift + len(new),
+                            "old": line[start:end], "new": new, "kind": "fix", "why": why})
+            shift += len(new) - (end - start)
+            last = end
+        built.append(line[last:])
+        new_line = "".join(built)
+        for start, end, why in checks:   # Flagged words: move their positions past earlier edits.
+            moved = start + sum(len(n) - (e - s) for s, e, n, _ in edits if e <= start)
+            changes.append({"start": offset + moved, "end": offset + moved + end - start,
+                            "old": line[start:end], "new": line[start:end], "kind": "check", "why": why})
+        if eng:
+            for m in DOUBLED_PUNCTUATION.finditer(new_line):
+                changes.append({"start": offset + m.start(), "end": offset + m.end(), "old": m.group(0),
+                                "new": m.group(0), "kind": "check", "why": "doubled punctuation"})
+        out_lines.append(new_line)
+        offset += len(new_line) + 1
+    return "\n".join(out_lines), sorted(changes, key=lambda c: c["start"])
 
 
 # --- Scoring -----------------------------------------------------------------

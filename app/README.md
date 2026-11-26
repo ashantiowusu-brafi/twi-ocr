@@ -32,7 +32,7 @@ The l → i fix for Modern Twi uses `data/twi_ghananlp.txt`, made by `python dow
 2. **Open your scans:** a PDF, several images, or a folder. You can also drop them on the window.
 3. **Options:**
    - *Pages* chooses what to read, as in a print dialog: all pages, odd pages, even pages, or a custom list such as `1-5, 8, 11-13`. Pages are counted across everything you opened, and the app shows how many there are.
-   - *Fix l read as i (Modern Twi)* turns on the word-list fix.
+   - *Fix common misreadings (Modern Twi)* turns on the word fixes. In Twi lines it fixes l read for i, using the GhanaNLP word list. In English lines (the book's italic translations) it fixes clear mistakes instead: a capital *Is/It* in mid-sentence, "!" read for l (wil! → will), and ɔ or ɛ inside an English word (ɔver → over). Doubled punctuation such as ";:" is flagged, not changed.
    - *Modern-spelling copy (Basel 1879)* saves a `.modern.txt` next to each page.
    - *Faster reading (beta)* reads about twice as fast with a smaller copy of the model (see below).
    - *Save text to* sets the folder. *File name* and *starting at* set how the pages are named: `name_001.txt`, `name_002.txt`, … The name starts as the PDF's name. Use *starting at* when the PDF begins partway through a book, for example 17 if its first page is page 17. Files are numbered by their page in the PDF, so reading only odd pages saves `name_001`, `name_003`, …
@@ -46,6 +46,7 @@ Press **Start reading**. The progress window shows how many pages are done and a
 - **Special characters:** the buttons above the text put a letter where the cursor is. They change with the spelling: ɛ Ɛ ɔ Ɔ for Modern Twi; e̲ o̲ E̲ O̲ ṅ w̌ ã ẽ ĩ õ ũ for 1879.
 - **Marks** (shown on a dotted circle) go on the letter just before the cursor: tone marks, tilde, macron, breve, caron, dot below and line below. Each letter keeps one mark above and one below, except that a tilde can sit with an acute or grave accent (ã́). Clicking a mark the letter already has takes it off. The line below only goes on e and o.
 - **Find:** ⌘F (or Ctrl+F) opens a find bar above the text. Every match is highlighted and the current one is orange; Return goes to the next, ⇧ Return to the previous, and Esc closes it with the cursor on the match. It ignores capitals but not marks, so o̲ finds o̲ and not o.
+- **Fixes:** lists every change the word fixes made on the page, with the reason. **Show** selects it in the text and **Undo** puts the original back. Items marked "check" were not changed; look at them yourself.
 - **Files:** shows the file name and numbering, and can change them. These are the same settings as on the start page.
 - **Saving:** *Save page* saves the page you are on; *Save all pages* saves every page. Saving again overwrites the same files, so you can save after more corrections.
 - **Status bar:** the bar at the bottom shows the model, how long the reading took, and any pages that could not be read. A page Tesseract cannot read is left empty for you to type in.

@@ -38,6 +38,7 @@ pyinstaller --noconfirm --windowed --name "Twi OCR" \
   --add-data "$ROOT/models/twi.traineddata:models" \
   --add-data "$ROOT/models/twi_1879.traineddata:models" \
   --add-data "$ROOT/orthography/christaller_1879.tsv:orthography" \
+  --add-data "$ROOT/wordlists/english_words.txt:wordlists" \
   ${EXTRA[@]+"${EXTRA[@]}"} \
   app/twi_ocr_app.py
 

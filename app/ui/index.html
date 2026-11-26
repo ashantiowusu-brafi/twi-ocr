@@ -70,6 +70,15 @@ button:disabled { cursor: default; opacity: 0.5; }
 #name-pop input { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
 #name-pop .example { font-size: 13px; color: var(--soft); line-height: 1.5; }
 #name-pop code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--ink); }
+#fix-pop { position: absolute; top: calc(100% - 4px); right: 20px; z-index: 5; width: 460px; max-height: 380px;
+  overflow: auto; background: #FFFFFF; border: 1px solid #D4D4DA; border-radius: 10px; padding: 12px 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.14); display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.fix-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid #F0F0F2; }
+.fix-row .what { flex: 1; font-family: "Charis Twi", "Charis SIL", serif; font-size: 15px; }
+.fix-row .what s { color: #B91C1C; }
+.fix-row .why { color: var(--soft); font: 12px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: block; }
+.fix-row.undone .what { color: var(--soft); }
+.fix-row.check .what { color: #92400E; }
 .toolbar { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px;
   border-bottom: 1px solid #D4D4DA; flex-wrap: wrap; }
 .tag { background: #FDEBD3; color: #9A3412; border-radius: 6px; padding: 5px 10px; font-size: 14px; font-weight: 600; }
@@ -189,7 +198,7 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
         <span id="pages-info" style="color: var(--soft); font-size: 13px"></span>
       </div>
       <div class="grid3">
-      <label class="check" title="Fix the letter l when it should be i (Modern Twi only)"><input type="checkbox" id="opt-fix"> Fix l read as i (Modern Twi)</label>
+      <label class="check" title="Modern Twi only. In Twi words: l read for i. In English lines: it Is → it is, wil! → will, ɔver → over; doubled punctuation is flagged, not changed. Every change is listed under Fixes on the results page, where it can be undone."><input type="checkbox" id="opt-fix"> Fix common misreadings (Modern Twi)</label>
       <label class="check" title="Also save a modern-spelling copy of each page (Basel Twi 1879 only)"><input type="checkbox" id="opt-modern"> Modern-spelling copy (Basel 1879)</label>
       <label class="check" title="Beta: reads about twice as fast with a smaller copy of the model. Its accuracy has not been measured yet and it may misread a few more letters. Turn off for the most accurate reading."><input type="checkbox" id="opt-fast"> Faster reading (beta)</label>
       </div>
@@ -246,10 +255,17 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
     </div>
     <div style="display: flex; gap: 8px; align-items: center">
       <span id="saved" style="font-size: 13px"></span>
+      <button class="btn small hidden" id="fix-btn" title="Changes the word fixes made on this page: review or undo them">Fixes: <span id="fix-count" style="font-weight: 600"></span></button>
       <button class="btn small" id="name-btn" title="Choose the file name and numbering">Files: <span id="name-short" style="font-weight: 600"></span></button>
       <button class="btn small" id="copy-btn">Copy</button>
       <button class="btn small" id="save-page-btn">Save page</button>
       <button class="primary small" id="save-all-btn" style="height: 36px; padding: 0 16px; font-size: 14px">Save all pages</button>
+    </div>
+    <div id="fix-pop" class="hidden" role="dialog" aria-label="Fixes on this page">
+      <div style="font-weight: 600">Fixes on this page</div>
+      <div style="font-size: 12px; color: var(--soft)">Made by "Fix common misreadings": l → i in Twi words, and clear mistakes in English lines. Items marked "check" were not changed.</div>
+      <div id="fix-list"></div>
+      <div id="fix-note" style="font-size: 12px; color: #B45309"></div>
     </div>
     <div id="name-pop" class="hidden" role="dialog" aria-label="File names">
       <div style="font-weight: 600">File names</div>
@@ -311,8 +327,9 @@ async function refresh() {
   $("#installed").innerHTML = tick(s.models.modern, "twi") + tick(s.models.basel1879, "twi_1879") +
     (s.tesseract ? `<span style="color: var(--soft)">${s.tesseract_version}</span>` : `<span class="missing">Tesseract not found</span>`);
   $("#tess-path").textContent = s.tesseract || "Not found";
-  $("#wordlist-note").textContent = s.word_list ? "Word list for the l → i fix: found." :
-    "Word list for the l → i fix: not found, so that fix is off. Run `python download.py` in the project folder once to make it.";
+  $("#wordlist-note").textContent = (s.word_list ? "Twi word list (for the word fixes): found." :
+    "Twi word list (for the word fixes): not found, so the fixes are off. Run `python download.py` in the project folder once to make it.") +
+    (s.english_list === false ? " English word list: not found, so English lines get only the Twi fixes." : "");
   state.mac = s.platform !== "windows" && s.platform !== "linux";   // ⌘ on a Mac, Ctrl elsewhere.
   if (!state.mac) {
     $("#zoom-hint").textContent = "Hold Ctrl and scroll to zoom; drag to move around the page.";
@@ -401,7 +418,7 @@ window.onDone = (count, source, label, model, fixed, oldStyle, note, seconds) =>
   $("#tab-modern").classList.toggle("hidden", !oldStyle);
   const took = seconds >= 60 ? `${Math.floor(seconds / 60)} min ${seconds % 60} s` : `${seconds} s`;
   $("#st-model").textContent = `Model: ${model}` + (seconds !== undefined ? ` · read in ${took} (${(seconds / count).toFixed(1)} s a page)` : "");
-  $("#st-fix").textContent = oldStyle ? "Clean-up: on" : `l → i fix: ${fixed ? "on" : "off"}`;
+  $("#st-fix").textContent = oldStyle ? "Clean-up: on" : `Word fixes: ${fixed ? "on" : "off"}`;
   $("#st-folder").textContent = `Saves to ${state.settings.output}`;
   state.source = source; state.dirty = false; resetRestart();
   state.newFiles = false; updateButtons();
@@ -442,6 +459,7 @@ function showTab(tab) {
   $("#text").value = state.page[tab] || "";
   showChars(state.oldStyle && tab === "text" ? "basel1879" : "modern");
   runFind();
+  renderFixes();
 }
 
 // ---- Special characters. Letters are inserted at the cursor; marks (shown on a
@@ -615,8 +633,62 @@ function showNames() {
     `Folder: ${String(state.settings.output).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c])}/${state.fileName}`;
 }
 
+// ---- Fixes list: every change the word fixes made, to show or undo.
+function locateFix(f) {   // Where the fix's text is now (the user may have edited around it), or -1.
+  const t = $("#text").value, want = f.status === "undone" ? f.old : f.new;
+  if (t.slice(f.start, f.start + want.length) === want) return f.start;
+  let best = -1;
+  for (let i = t.indexOf(want, Math.max(0, f.start - 300)); i !== -1 && i <= f.start + 300; i = t.indexOf(want, i + 1)) {
+    if (best < 0 || Math.abs(i - f.start) < Math.abs(best - f.start)) best = i;
+  }
+  return best;
+}
+function scrollToOffset(at) {   // Scroll the text box so position `at` is in view.
+  const ta = $("#text"), hl = $("#text-hl");
+  if (finder.open) return;
+  hl.innerHTML = escapeHtml(ta.value.slice(0, at)) + '<mark id="fix-spot"></mark>';
+  hl.style.paddingRight = `${16 + Math.max(0, ta.offsetWidth - ta.clientWidth - 2)}px`;
+  const y = $("#fix-spot").offsetTop;
+  hl.innerHTML = "";
+  ta.scrollTop = Math.max(0, y - ta.clientHeight / 3);
+}
+function renderFixes() {
+  const fixes = (state.page && state.tab === "text" && state.page.fixes) || [];
+  const active = fixes.filter((f) => f.kind === "fix" && f.status !== "undone").length;
+  const checks = fixes.filter((f) => f.kind === "check").length;
+  $("#fix-btn").classList.toggle("hidden", fixes.length === 0);
+  $("#fix-count").textContent = `${active}` + (checks ? ` · ${checks} to check` : "");
+  $("#fix-list").innerHTML = fixes.map((f, i) => {
+    const what = f.kind === "check" ? `Check “${escapeHtml(f.old)}”`
+      : `<s>${escapeHtml(f.old)}</s> → ${escapeHtml(f.new)}`;
+    const undo = f.kind === "fix" && f.status !== "undone" ? `<button class="btn small" data-undo="${i}">Undo</button>` : "";
+    const label = f.status === "undone" ? " (undone)" : "";
+    return `<div class="fix-row ${f.kind}${f.status === "undone" ? " undone" : ""}"><span class="what">${what}${label}` +
+      `<span class="why">${escapeHtml(f.why)}</span></span><button class="btn small" data-show="${i}">Show</button>${undo}</div>`;
+  }).join("");
+}
+function showFix(i) {
+  const f = state.page.fixes[i], at = locateFix(f), ta = $("#text");
+  if (at < 0) { $("#fix-note").textContent = "That text has changed since; find it by hand."; return; }
+  const len = (f.status === "undone" ? f.old : f.new).length;
+  scrollToOffset(at); ta.focus(); ta.setSelectionRange(at, at + len);
+}
+function undoFix(i) {
+  const f = state.page.fixes[i], at = locateFix(f), ta = $("#text");
+  if (at < 0) { $("#fix-note").textContent = "That text has changed since; change it by hand."; return; }
+  ta.value = ta.value.slice(0, at) + f.old + ta.value.slice(at + f.new.length);
+  const shift = f.old.length - f.new.length;
+  state.page.fixes.forEach((g) => { if (g !== f && g.start > at) { g.start += shift; g.end += shift; } });
+  Object.assign(f, { status: "undone", start: at, end: at + f.old.length });
+  state.page.text = ta.value; state.dirty = true; $("#saved").textContent = "";
+  runFind(true); keepEdits(); renderFixes();
+}
+
 async function keepEdits() {
-  if (state.page) { state.page[state.tab] = $("#text").value; await api.update_text(state.index, state.tab, $("#text").value); }
+  if (state.page) {
+    state.page[state.tab] = $("#text").value;
+    await api.update_text(state.index, state.tab, $("#text").value, state.tab === "text" ? (state.page.fixes || []) : null);
+  }
 }
 
 window.addEventListener("pywebviewready", async () => {
@@ -697,6 +769,16 @@ window.addEventListener("pywebviewready", async () => {
     }
   }
   $("#name-done").addEventListener("click", () => pop.classList.add("hidden"));
+  const fixPop = $("#fix-pop");
+  $("#fix-btn").addEventListener("click", () => { $("#fix-note").textContent = ""; fixPop.classList.toggle("hidden"); });
+  $("#fix-list").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.show) showFix(+b.dataset.show); else if (b.dataset.undo) undoFix(+b.dataset.undo);
+  });
+  fixPop.addEventListener("mousedown", (e) => { if (e.target.closest("button")) e.preventDefault(); });   // keep the text selection
+  document.addEventListener("mousedown", (e) => {
+    if (!fixPop.classList.contains("hidden") && !fixPop.contains(e.target) && !$("#fix-btn").contains(e.target)) fixPop.classList.add("hidden");
+  });
   pop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === "Escape") pop.classList.add("hidden"); });
   document.addEventListener("mousedown", (e) => {
     if (!pop.classList.contains("hidden") && !pop.contains(e.target) && !$("#name-btn").contains(e.target)) pop.classList.add("hidden");

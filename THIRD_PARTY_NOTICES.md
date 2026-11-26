@@ -21,6 +21,12 @@ This project's own code is MIT-licensed. It depends on, or was built with, the c
 | [PyInstaller](https://pyinstaller.org/) | Building the desktop app | GPL-2.0 with an exception that allows distributing the built app under any licence |
 | [Tabler Icons](https://tabler.io/icons) | Icons in the desktop app (`app/ui/index.html`); included | MIT, see `app/ui/icons-LICENSE.txt` |
 
+## Word lists
+
+| Word list | Used for | License |
+| --- | --- | --- |
+| English words from Tesseract's `eng.traineddata` ([tessdata_best](https://github.com/tesseract-ocr/tessdata_best)) | The English check (`wordlists/english_words.txt`; included) | Apache-2.0 |
+
 ## Models
 
 | Model | Used for | License |

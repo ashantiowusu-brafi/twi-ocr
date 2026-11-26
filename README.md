@@ -13,9 +13,9 @@ The two images below show each model at work: `twi` on a page of a modern storyb
 | | Character error rate | ɛ/ɔ accuracy |
 | --- | --- | --- |
 | Stock Tesseract (English) | 14.6% | 0.0% |
-| This project (model v4 + public post-correction) | 3.4% | 97.3% |
+| This project (model v5 + public post-correction) | 3.3% | 97.4% |
 
-Full results for every model version are in [`eval/bu_me_be_results.md`](eval/bu_me_be_results.md) (Bu Me Bɛ) and [`eval/christaller_1879/results.md`](eval/christaller_1879/results.md) (1879), and a write-up of the findings for both books is in [`docs/WRITEUP.md`](docs/WRITEUP.md).
+Model v5 (November 2026) was trained further on English lines in italic and sans-serif type, because *Bu Me Bɛ* prints its English translations that way. Its Twi scores are as good as v4's, and on the 14 test pages it made about 20% fewer non-word errors in the English (an estimate from error counts; an exact English score needs proofread pages). Full results for every model version are in [`eval/bu_me_be_results.md`](eval/bu_me_be_results.md) (Bu Me Bɛ) and [`eval/christaller_1879/results.md`](eval/christaller_1879/results.md) (1879), and a write-up of the findings for both books is in [`docs/WRITEUP.md`](docs/WRITEUP.md).
 
 ## Quick start
 
@@ -58,6 +58,7 @@ It reads the underlined vowels correctly 88% of the time. The weakest marks are 
 | --- | --- | --- | --- | --- |
 | Stock Tesseract (English) | 14.6% | 0% | 13.5% | 3% |
 | `twi` (v4, modern model) | 4.1% | 97% | 11.8% | 18% |
+| `twi` (v5, modern model) | 4.0% | 97% | not yet scored | not yet scored |
 | `twi_1879` (1879 model) | 12.8% | 37% | 6.1% (5.1% with clean-up) | 80% |
 
 Each model works only on the spelling it was trained for. `twi_1879` was trained to write ɛ and ɔ as e̲ and o̲, so on modern text it scores close to stock Tesseract; `twi` drops most of the 1879 marks. Scores on *Bu Me Bɛ* are for 319 proverbs; on the 1879 book, for the four proofread pages.

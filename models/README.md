@@ -28,15 +28,15 @@ Each model works only on the spelling it was trained for: on *Bu Me Bɛ*, `twi_1
 
 ### Summary
 
-A Tesseract 5 LSTM recognition model for printed Twi (Asante and Akuapem), fine-tuned to read ɛ, ɔ, Ɛ and Ɔ, curly quotes and proverb-style lines.
+A Tesseract 5 LSTM recognition model for printed Twi (Asante and Akuapem), fine-tuned to read ɛ, ɔ, Ɛ and Ɔ, curly quotes and proverb-style lines, and English printed in italics beside the Twi. The current version is v5 (November 2026).
 
 | Item | Detail |
 | --- | --- |
 | Author | Ashanti Owusu-Brafi |
-| Base model | `Latin.traineddata` from tessdata_best (Apache-2.0) |
+| Base model | `Latin.traineddata` from tessdata_best (Apache-2.0), fine-tuned through versions v1–v4; v5 continues from v4 |
 | Training tool | tesstrain, Tesseract 5.5.4 |
-| Training data | 20,000 synthetic text-line images: about 45% GhanaNLP Twi, 40% Ghana Corpus (Bible) Twi, 15% English |
-| Fonts | Charis SIL, Noto Serif and system fonts containing ɛ and ɔ |
+| Training data | v1–v4: 20,000 synthetic text-line images, about 45% GhanaNLP Twi, 40% Ghana Corpus (Bible) Twi, 15% English. v5: 20,000 more, about 35% GhanaNLP Twi, 30% Bible Twi and 35% English, with most English lines in italics, some in brackets as in the book's explanations, and lookalike letters (Greek ε, reversed ↄ) cleaned out |
+| Fonts | Charis SIL, Noto Serif, Noto Sans (from v5) and system fonts containing ɛ and ɔ, upright and italic |
 | License | CC BY-NC-SA 4.0 (non-commercial) |
 
 ### Use
@@ -63,13 +63,16 @@ Tested on 319 proverbs from the first 14 scanned pages of *Bu Me Bɛ: Proverbs o
 | --- | --- | --- |
 | Stock Tesseract (English) | 14.6% | 0.0% |
 | `twi` (v4) | 4.1% | 97.3% |
-| `twi` + public post-correction | 3.4% | 97.3% |
+| `twi` (v5, current) | 4.0% | 97.4% |
+| `twi` (v5) + public post-correction | 3.3% | 97.4% |
+
+These scores are for the Twi proverb text. For the English, which the book prints in italics, v5 made about 20% fewer non-word errors than v4 on the same 14 pages, with fewer ɔ/ɛ inside English words and fewer stray marks such as "wil!" or ";:". These are estimates from error counts, not a full English score.
 
 ### Limitations
 
 - **Tested on one book.** Results on other printing styles and handwriting are unknown. It will be scored on the whole of *Bu Me Bɛ* once all 7,015 proverbs are transcribed.
 - **It can't read 19th-century spelling** (e̲ o̲, tildes, accents): use `twi_1879` for that.
-- **Remaining errors:** mostly i read as l (fixed by the post-correction); details in [`eval/errors_twi_v4.md`](https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/eval/errors_twi_v4.md).
+- **Remaining errors:** mostly i read as l (fixed by the post-correction); details for v4 in [`eval/errors_twi_v4.md`](https://github.com/ashantiowusu-brafi/twi-ocr/blob/main/eval/errors_twi_v4.md). In italic English, v5 reads the lowercase *i* as a capital *I* more often than v4 ("it Is", about 18% of mid-sentence "is" on the test pages, against 13%).
 - **Spelling is reproduced, not standardized.** The model reads the page as printed. It does not modernize spellings, and it should not be used to "correct" e/ɛ or o/ɔ, which distinguish different words in Twi.
 - **Tone marks** were not tested: the test book prints none.
 

@@ -281,7 +281,31 @@ def score_pages(name: str, ocr_by_scan: dict[str, str], truth: dict[str, list[st
     return {"page": page_edits / max(page_chars, 1), "english": english}
 
 
-def write_results(rows: list[dict], n_proverbs: int, n_scans: int, reference: str) -> None:
+def english_slips(ocr_by_scan: dict[str, str], english: set[str], twi: set[str]) -> dict:
+    """Count clear English mistakes in a model's readings of the scans.
+
+    Needs no transcription: these patterns are wrong wherever they appear in an
+    English line (a capital Is/It after a lowercase word, ɔ or ɛ inside an
+    English word, "!" inside a word, doubled punctuation such as ";:").
+    Mistakes that still make a real word are not counted, so this is a lower bound.
+    """
+    counts = {"words": 0, "Is/It": 0, "ɔ/ɛ": 0, "!": 0, "punctuation": 0}
+    for text in ocr_by_scan.values():
+        lines = [l for l in unicodedata.normalize("NFC", text).splitlines() if l.strip()]
+        for line, eng in zip(lines, pc.english_lines(lines, english, twi)):
+            if not eng:
+                continue
+            counts["words"] += len([w for w in pc.WORD.findall(line) if len(w) > 1])
+            counts["Is/It"] += len(pc.MID_SENTENCE_CAPITAL.findall(line))
+            counts["ɔ/ɛ"] += sum(1 for w in pc.WORD.findall(line) if re.search("[ɔɛƆƐ]", w)
+                                 and w.translate(pc.OPEN_TO_PLAIN).lower() in english and w.lower() not in twi)
+            counts["!"] += len(re.findall(r"[^\W\d_]![^\W\d_]|[^\W\d_]! [a-z]", line))
+            counts["punctuation"] += len(pc.DOUBLED_PUNCTUATION.findall(line))
+    return counts
+
+
+def write_results(rows: list[dict], n_proverbs: int, n_scans: int, reference: str,
+                  slips: list[tuple[str, dict]] | None = None) -> None:
     """Write the combined, publishable results table."""
     stock_cer = rows[0]["cer"]
     lines = [
@@ -318,11 +342,31 @@ def write_results(rows: list[dict], n_proverbs: int, n_scans: int, reference: st
             "exactly as printed: the whole page, and only its English lines (translations and explanations, "
             "printed in italics; issue T7). Post-correction rows score the corrected page.",
         ]
+    if slips:
+        lines += [
+            "",
+            "## English: clear mistakes per 1,000 English words",
+            "",
+            f"The book prints each proverb's English in italics (issue T7). Counted in the English lines "
+            f"of the same {n_scans} pages: a capital *Is/It* after a lowercase word, ɔ or ɛ inside an "
+            "English word, \"!\" inside a word, and doubled punctuation such as \";:\". These are wrong "
+            "wherever they appear, so no transcription is needed; mistakes that still make a real word "
+            "are not counted.",
+            "",
+            "| Model | English words | Is/It | ɔ/ɛ | ! | ;: ., | All, per 1,000 words |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+        for name, c in slips:
+            total = c["Is/It"] + c["ɔ/ɛ"] + c["!"] + c["punctuation"]
+            lines.append(f"| `{name}` | {c['words']:,} | {c['Is/It']} | {c['ɔ/ɛ']} | {c['!']} | "
+                         f"{c['punctuation']} | {1000 * total / max(c['words'], 1):.1f} |")
     lines += [
         "",
         f"Proverbs are assigned to pages using `{reference}`'s reading of the printed "
         "proverb numbers. Post-correction swaps only l → i, using a Twi word list "
-        "(public: GhanaNLP text only; private: adds Bible and UGSpeechData text).",
+        "(public: GhanaNLP text only; private: adds Bible and UGSpeechData text). "
+        "The English check (`postcorrect.correct_page`) skips the l → i fixes on English lines and fixes "
+        "clear English mistakes instead (it Is → it is, wil! → will, ɔver → over).",
     ]
     RESULTS_MD.parent.mkdir(exist_ok=True)
     RESULTS_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -391,13 +435,44 @@ def main() -> None:
                    notes=f"l → i word-list fixes; word list: {names} ({len(vocab):,} words)")
         results.append(row)
 
-    write_results(results, len(pages), len(set(pages.values())), reference)
+    # 5. The English check, on top of the post-correction, and English mistake counts.
+    english = pc.load_english_words()
+    slips = []
+    if english:
+        twi_words = set(pc.build_vocabulary([pc.GHANANLP_TXT]))
+        for model in [m for m in models if m.startswith("twi_v")]:
+            slips.append((model, english_slips(all_ocr[model], english, twi_words)))
+        for label, sources in word_lists.items():
+            available = [s for s in sources if s.exists()]
+            if label == "private" and len(available) <= 1:
+                continue
+            vocab = pc.build_vocabulary(available)
+            checked = {s: pc.correct_page(unicodedata.normalize("NFC", t), vocab, english)[0]
+                       for s, t in all_ocr[reference].items()}
+            lines_by_scan = {s: [l for l in t.splitlines() if l.strip()] for s, t in checked.items()}
+            readings = {n: best_match(answers[n], lines_by_scan[s])[0] for n, s in pages.items()}
+            name = f"{reference}_englishcheck_{label}"
+            row = score(name, readings, answers, pages)
+            row.update(name=f"{reference} + post-correction + English check ({label})",
+                       notes="Line by line: l → i on Twi lines; clear English fixes on English lines",
+                       n_pages=len(truth), **score_pages(name, checked, truth))
+            results.append(row)
+            if label == "public":
+                slips.append((f"{reference} + English check", english_slips(checked, english, twi_words)))
+    else:
+        print(f"No English word list at {pc.ENGLISH_TXT}; skipping the English check.")
+
+    write_results(results, len(pages), len(set(pages.values())), reference, slips)
     for r in results:
         extra = ""
         if r.get("page") is not None:
             extra = f"   page {r['page']:.1%}   English {r['english']:.1%}" if r.get("english") is not None \
                 else f"   page {r['page']:.1%}"
         print(f"  {r['name']:<40} CER {r['cer']:.1%}   ɛ/ɔ {r['special']:.1%}{extra}")
+    for name, c in slips:
+        total = c["Is/It"] + c["ɔ/ɛ"] + c["!"] + c["punctuation"]
+        print(f"  English mistakes  {name:<28} {1000 * total / max(c['words'], 1):5.1f} per 1,000 words "
+              f"(Is/It {c['Is/It']}, ɔ/ɛ {c['ɔ/ɛ']}, ! {c['!']}, ;: {c['punctuation']})")
     print(f"\nResults table: {RESULTS_MD}")
     print(f"Per-proverb details: {DETAILS_DIR}/")
 
