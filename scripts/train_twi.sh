@@ -10,7 +10,7 @@
 #   python render_lines.py --count 20000 --seed 5 --english-share 0.35 \
 #       --bible-share 0.30 --italic-english 0.75 --italic-twi 0.05 \
 #       --paren-english 0.35 --number-period 0.5 --no-english-numbers \
-#       --out private/ground-truth-v5
+#       --fix-lookalikes --out private/ground-truth-v5
 #   bash scripts/train_twi.sh
 #
 # Change the settings below if your folders differ. Same tools as the earlier
@@ -39,6 +39,7 @@ PROJECT_DIR="$PWD"
 KEEP_AWAKE=""; command -v caffeinate >/dev/null && KEEP_AWAKE="caffeinate -i"   # macOS: stay awake
 
 cd "$TESSTRAIN_DIR"
+mkdir -p data   # tesstrain makes it too, but the log below is opened first
 $KEEP_AWAKE "$MAKE" training \
   MODEL_NAME="$MODEL_NAME" \
   START_MODEL="$START_MODEL" \
@@ -56,6 +57,12 @@ check "ɛ and ɔ"          "ɛ|ɔ"
 check "Ɛ and Ɔ"          "Ɛ|Ɔ"
 check "curly quotes"     "“|”"
 check "brackets ( )"     "\(|\)"
+# Lookalike letters must not be in the model (twi_v3 removed them).
+if grep -q -E "ε|Ε|ↄ|Ↄ|ℇ|ᴐ|Ꜫ" "$UNICHARSET"; then
+  echo "WARNING: lookalike letters (ε ↄ ℇ ...) are in $UNICHARSET; render with --fix-lookalikes"
+else
+  echo "OK: no lookalike letters"
+fi
 
 cp "data/$MODEL_NAME.traineddata" "$PROJECT_DIR/models/$MODEL_NAME.traineddata"
 echo "Saved models/$MODEL_NAME.traineddata. Next: python compare_models.py"

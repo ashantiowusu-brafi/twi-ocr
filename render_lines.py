@@ -34,13 +34,15 @@ options below; their defaults leave earlier models reproducible:
     python render_lines.py --count 20000 --seed 5 --english-share 0.35 \
         --bible-share 0.30 --italic-english 0.75 --italic-twi 0.05 \
         --paren-english 0.35 --number-period 0.5 --no-english-numbers \
-        --out private/ground-truth-v5
+        --fix-lookalikes --out private/ground-truth-v5
     --italic-english / --italic-twi  share of English / Twi lines drawn in an
                                      italic font (Bu Me Bɛ prints English in italics)
     --paren-english   share of English lines in (parentheses), like the book's
                       explanations
     --number-period   share of proverb numbers written "13." instead of "13"
     --no-english-numbers  proverb numbers only on Twi lines, as in the book
+    --fix-lookalikes  replace lookalike letters (Greek ε, reversed ↄ ...) with ɛ and ɔ,
+                      and drop invisible characters, in every line
 
 1879 mode (for Christaller-era books such as Twi Mmebusɛm): Twi lines are
 converted with orthography.py (ɛ -> e̲, ɔ -> o̲) and given tildes, accents,
@@ -123,6 +125,22 @@ def read_lines(path: Path) -> list[str]:
         return []
     text = unicodedata.normalize("NFC", path.read_text(encoding="utf-8"))
     return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+# Lookalike and invisible characters, mapped as download.py maps them in the Twi
+# text. With --fix-lookalikes they are cleaned from every line. Without it
+# (the default, as for twi_v1 to twi_v4) the text is used as it comes: the
+# English side of the GhanaNLP data contains Twi names spelled with Greek ε and
+# reversed ↄ, and twi_v5's first run learned both from it.
+LOOKALIKES = str.maketrans({
+    "ε": "ɛ", "Ε": "Ɛ", "Ꜫ": "Ɛ", "ℇ": "Ɛ", "ᴐ": "ɔ", "ↄ": "ɔ", "Ↄ": "Ɔ", "ꓛ": "Ɔ", "ȼ": "₵",
+    "\u200b": None, "\u200c": None, "\u200d": None, "\ufeff": None, "\u00ad": None,
+})
+
+
+def fix_lookalikes(line: str) -> str:
+    """Replace lookalike letters with the Twi ones and drop invisible characters."""
+    return " ".join(line.translate(LOOKALIKES).split())
 
 
 def read_english(path: Path) -> list[str]:
@@ -437,6 +455,8 @@ def main() -> None:
                         help='Share of proverb numbers written "13." (default 0)')
     parser.add_argument("--no-english-numbers", action="store_true",
                         help="Put proverb numbers only on Twi lines")
+    parser.add_argument("--fix-lookalikes", action="store_true",
+                        help="Clean lookalike letters (ε, ↄ ...) and invisible characters from every line")
     parser.add_argument("--list-fonts", action="store_true", help="List the fonts found and stop")
     args = parser.parse_args()
     old_style = args.orthography == "1879"
@@ -472,6 +492,8 @@ def main() -> None:
         + [(l, True) for l in sample_lines(read_lines(BIBLE_TXT), n_bible, rng)]
         + [(l, False) for l in sample_lines(read_english(ENGLISH_CSV), n_english, rng)]
     )
+    if args.fix_lookalikes:
+        lines = [(fix_lookalikes(l), is_twi) for l, is_twi in lines]
     rng.shuffle(lines)
 
     out_dir.mkdir(parents=True, exist_ok=True)
