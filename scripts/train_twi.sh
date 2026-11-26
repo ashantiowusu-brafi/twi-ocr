@@ -57,12 +57,17 @@ check "ɛ and ɔ"          "ɛ|ɔ"
 check "Ɛ and Ɔ"          "Ɛ|Ɔ"
 check "curly quotes"     "“|”"
 check "brackets ( )"     "\(|\)"
-# Lookalike letters must not be in the model (twi_v3 removed them).
-if grep -q -E "ε|Ε|ↄ|Ↄ|ℇ|ᴐ|Ꜫ" "$UNICHARSET"; then
-  echo "WARNING: lookalike letters (ε ↄ ℇ ...) are in $UNICHARSET; render with --fix-lookalikes"
+# Lookalike letters (ε ↄ ℇ ...) must not be in the training lines. The model's
+# full list also holds the starting model's letters (twi_v4 has ℇ, Ↄ and ȼ
+# from older text), so the check reads the list made from the training lines.
+LOOKALIKE="ε|Ε|ↄ|Ↄ|ℇ|ᴐ|Ꜫ|ꓛ|ȼ"
+if grep -q -E "$LOOKALIKE" "data/$MODEL_NAME/my.unicharset"; then
+  echo "WARNING: lookalike letters are in the training lines; render with --fix-lookalikes"
 else
-  echo "OK: no lookalike letters"
+  echo "OK: no lookalike letters in the training lines"
 fi
+INHERITED=$(grep -o -E "^($LOOKALIKE) " "$UNICHARSET" | tr -d ' ' | tr '\n' ' ')
+[ -n "$INHERITED" ] && echo "Note: kept from $START_MODEL's character list: $INHERITED"
 
 cp "data/$MODEL_NAME.traineddata" "$PROJECT_DIR/models/$MODEL_NAME.traineddata"
 echo "Saved models/$MODEL_NAME.traineddata. Next: python compare_models.py"
