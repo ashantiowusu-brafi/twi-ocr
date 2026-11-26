@@ -66,7 +66,9 @@ On one Mac, *Bu Me Bɛ* read at about 1.4 seconds a page with faster reading on 
 bash app/build_mac.sh
 ```
 
-This makes `app/dist/Twi OCR.app` and `app/dist/Twi-OCR.dmg` (about 100–200 MB). The models, the 1879 spelling rules, Tesseract and, if present, the word list are packed inside. Tesseract is copied from your Homebrew installation with the libraries it needs by `bundle_tesseract_mac.py`, which points it at its own copies and signs them again, so the app runs on Macs without Homebrew. To leave Tesseract out, run `SKIP_TESSERACT=1 bash app/build_mac.sh`. The app is built for the kind of Mac it is built on (Apple Silicon here). `app/build/` holds temporary files and can be deleted. Both folders are kept out of git. Attach the `.dmg` to a GitHub release to share it.
+This makes `app/dist/Twi OCR.app` and `app/dist/Twi-OCR.dmg` (about 100–200 MB). The models, the 1879 spelling rules, Tesseract and, if present, the word list are packed inside. Tesseract is copied from your Homebrew installation with the libraries it needs by `bundle_tesseract_mac.py`, which points it at its own copies and signs them again, so the app runs on Macs without Homebrew. To leave Tesseract out, run `SKIP_TESSERACT=1 bash app/build_mac.sh`. The app is built for the kind of Mac it is built on, so a build on an Apple Silicon Mac does not run on an Intel Mac ("This app is not supported on this Mac").
+
+**Building on GitHub.** `.github/workflows/build-mac.yml` builds both kinds on GitHub's Macs: `Twi-OCR-Mac-Intel.dmg` and `Twi-OCR-Mac-AppleSilicon.dmg`. In the **Actions** tab choose **Build Mac app** and **Run workflow** (or `gh workflow run build-mac.yml`); the files appear under the run's **Artifacts**, and are attached to a release if you name one. Because Tesseract comes from Homebrew on macOS 15, these need macOS 15 or newer. To find out which kind of Mac you have: Apple menu > About This Mac (Chip: Apple M… is Apple Silicon; Processor: Intel is Intel), or `uname -m` in Terminal (arm64 or x86_64). `app/build/` holds temporary files and can be deleted. Both folders are kept out of git. Attach the `.dmg` to a GitHub release to share it.
 
 ## Windows
 
@@ -79,7 +81,7 @@ Settings are saved in `%APPDATA%\Twi OCR\settings.json`, and text by default in 
 ## What people need (Mac)
 
 - **Nothing else to install.** Tesseract is included. The app uses its own copy first; to use another, open **Settings** and choose the `tesseract` program. When run from the project folder (`python app/twi_ocr_app.py`), it uses your installed Tesseract instead.
-- **Opening an unsigned app.** The app is not signed with an Apple Developer ID, so the first time macOS will say it cannot check it. Right-click the app and choose **Open**, or open it from **System Settings → Privacy & Security → Open Anyway**. Signing and notarising need a paid Apple Developer account.
+- **Opening an unsigned app.** The app is not signed with an Apple Developer ID, so the first time macOS says Apple cannot check it. On macOS 14 and earlier, right-click the app and choose **Open**. On macOS 15 and newer: double-click it, click **Done**, then straight away open **System Settings → Privacy & Security**, scroll down to **Security** and click **Open Anyway** (the button shows for about an hour after the attempt). Or, in Terminal: `xattr -dr com.apple.quarantine "/Applications/Twi OCR.app"`. Signing and notarising need the paid Apple Developer Program.
 
 ## Files
 

@@ -1,0 +1,72 @@
+# Build the Mac app on GitHub's Macs: one for Intel and one for Apple Silicon.
+# Run it from the repository's Actions tab ("Build Mac app" > "Run workflow"),
+# or with: gh workflow run build-mac.yml
+# Each .dmg is kept as a download on the run's page, and attached to a
+# release if you give one.
+name: Build Mac app
+
+on:
+  workflow_dispatch:
+    inputs:
+      models_release:
+        description: "Release to take the model files from"
+        default: "v1.0"
+        required: true
+      attach_to:
+        description: "Release to attach the .dmg files to (leave empty to skip)"
+        default: ""
+        required: false
+
+permissions:
+  contents: write   # to attach the .dmg files to a release
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            kind: Intel
+          - runner: macos-15
+            kind: AppleSilicon
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Models
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "${{ inputs.models_release }}" --pattern "*.traineddata" --dir models
+
+      - name: Word list for the l -> i fix (public GhanaNLP text)
+        run: |
+          python -m venv .venv-data
+          .venv-data/bin/pip install datasets==5.2.0 pandas==3.1.1 openpyxl==3.1.5 huggingface_hub==2.4.0
+          .venv-data/bin/python download.py
+
+      - name: Tesseract
+        run: brew install tesseract
+
+      - name: App packages
+        run: pip install -r app/requirements-app.txt pillow==13.0.0 pypdfium2==5.15.2
+
+      - name: Build
+        run: |
+          bash app/build_mac.sh
+          mv app/dist/Twi-OCR.dmg "app/dist/Twi-OCR-Mac-${{ matrix.kind }}.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Twi-OCR-Mac-${{ matrix.kind }}
+          path: app/dist/Twi-OCR-Mac-${{ matrix.kind }}.dmg
+
+      - name: Attach to release
+        if: ${{ inputs.attach_to != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.attach_to }}" "app/dist/Twi-OCR-Mac-${{ matrix.kind }}.dmg" --clobber
