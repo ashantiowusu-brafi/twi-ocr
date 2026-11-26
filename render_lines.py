@@ -27,6 +27,20 @@ Usage:
     python render_lines.py                 # 6,000 lines
     python render_lines.py --count 20000   # more lines
     python render_lines.py --orthography 1879 --count 20000
+    python render_lines.py --list-fonts    # show the fonts it would use
+
+Model twi_v5 (issue T7: English, especially in italics) used the book-layout
+options below; their defaults leave earlier models reproducible:
+    python render_lines.py --count 20000 --seed 5 --english-share 0.35 \
+        --bible-share 0.30 --italic-english 0.75 --italic-twi 0.05 \
+        --paren-english 0.35 --number-period 0.5 --no-english-numbers \
+        --out private/ground-truth-v5
+    --italic-english / --italic-twi  share of English / Twi lines drawn in an
+                                     italic font (Bu Me Bɛ prints English in italics)
+    --paren-english   share of English lines in (parentheses), like the book's
+                      explanations
+    --number-period   share of proverb numbers written "13." instead of "13"
+    --no-english-numbers  proverb numbers only on Twi lines, as in the book
 
 1879 mode (for Christaller-era books such as Twi Mmebusɛm): Twi lines are
 converted with orthography.py (ɛ -> e̲, ɔ -> o̲) and given tildes, accents,
@@ -69,12 +83,15 @@ FONT_TYPES = {".ttf", ".otf", ".ttc"}
 REQUIRED_CHARS = "ɛɔƐƆ"
 
 # Book text is regular-weight print, so extreme weights, novelty and symbol
-# fonts are left out. Fonts in the project's fonts/ folder are always used.
+# fonts are left out, also in the project's fonts/ folder (font downloads
+# often include every weight, from Thin to Black).
 EXCLUDED_FONT_WORDS = (
     "black", "heavy", "extrabold", "ultra", "thin", "hairline", "extralight",
     "condensed", "narrow", "mono", "code", "symbol", "emoji", "dingbat",
     "math", "braille", "lastresort", "keyboard",
 )
+
+ITALIC_WORDS = ("italic", "oblique")   # Font file names that mark an italic face.
 
 MAX_LINE_CHARS = 60      # Roughly one printed line in the book.
 MIN_LINE_CHARS = 8
@@ -167,7 +184,8 @@ def capitalize_start(line: str, rng: random.Random) -> str:
     return line
 
 
-def add_proverb_number(line: str, rng: random.Random, style: str = "modern") -> str:
+def add_proverb_number(line: str, rng: random.Random, style: str = "modern",
+                       period_share: float = 0.0) -> str:
     """Put a proverb number before some lines, as the book prints them.
 
     Lines that start with Ɔ or Ɛ get a number much more often, because that
@@ -180,7 +198,10 @@ def add_proverb_number(line: str, rng: random.Random, style: str = "modern") -> 
     if rng.random() < share:
         if style == "1879":
             return f"{rng.randint(1, 3600)}. {line}"
-        return f"{rng.randint(1, HIGHEST_PROVERB_NUMBER)} {line}"
+        number = rng.randint(1, HIGHEST_PROVERB_NUMBER)
+        if period_share and rng.random() < period_share:   # "13. Ɔba", as in the full book.
+            return f"{number}. {line}"
+        return f"{number} {line}"
     return line
 
 
@@ -238,11 +259,28 @@ def find_fonts() -> list[Path]:
                 if path.suffix.lower() not in FONT_TYPES:
                     continue
                 name = path.stem.lower().replace("-", "").replace(" ", "")
-                if folder != Path("fonts") and any(w in name for w in EXCLUDED_FONT_WORDS):
+                if any(w in name for w in EXCLUDED_FONT_WORDS):
                     continue
                 if font_has_chars(path, REQUIRED_CHARS):
                     found.append(path)
     return sorted(set(found))
+
+
+def is_italic(path: Path) -> bool:
+    """Return True for an italic or oblique face, judged by the file name."""
+    return any(w in path.stem.lower() for w in ITALIC_WORDS)
+
+
+def pick_font(fonts: list[Path], italic_share: float | None, rng: random.Random) -> Path:
+    """Choose a font. With ``italic_share`` set, choose italic with that chance.
+
+    Without it (the default), any font may be chosen, as for twi_v1 to twi_v4.
+    """
+    if italic_share is None:
+        return rng.choice(fonts)
+    want_italic = rng.random() < italic_share
+    pool = [f for f in fonts if is_italic(f) == want_italic]
+    return rng.choice(pool or fonts)
 
 
 # --- Images ------------------------------------------------------------------
@@ -387,9 +425,22 @@ def main() -> None:
     parser.add_argument("--orthography", choices=["modern", "1879"], default="modern",
                         help="modern (default) or 1879: Christaller spelling, "
                              "written to private/ground-truth-1879/")
+    parser.add_argument("--out", type=Path, help="Output folder (default private/ground-truth, "
+                                                 "or private/ground-truth-1879)")
+    parser.add_argument("--italic-english", type=float, default=None,
+                        help="Share of English lines drawn in italics (default: any font)")
+    parser.add_argument("--italic-twi", type=float, default=None,
+                        help="Share of Twi lines drawn in italics (default: any font)")
+    parser.add_argument("--paren-english", type=float, default=0.0,
+                        help="Share of English lines in parentheses (default 0)")
+    parser.add_argument("--number-period", type=float, default=0.0,
+                        help='Share of proverb numbers written "13." (default 0)')
+    parser.add_argument("--no-english-numbers", action="store_true",
+                        help="Put proverb numbers only on Twi lines")
+    parser.add_argument("--list-fonts", action="store_true", help="List the fonts found and stop")
     args = parser.parse_args()
     old_style = args.orthography == "1879"
-    out_dir = Path("private/ground-truth-1879") if old_style else OUT_DIR
+    out_dir = args.out or (Path("private/ground-truth-1879") if old_style else OUT_DIR)
     prefix = "twi1879" if old_style else "twi"
     if old_style:
         import orthography
@@ -398,8 +449,17 @@ def main() -> None:
     fonts = find_fonts()
     if not fonts:
         raise SystemExit("No fonts with ɛ/ɔ found. Add .ttf files to a fonts/ folder.")
+    if args.list_fonts:
+        for label, group in (("Upright", [f for f in fonts if not is_italic(f)]),
+                             ("Italic", [f for f in fonts if is_italic(f)])):
+            print(f"{label} ({len(group)}):")
+            for f in group:
+                print(f"  {f}")
+        return
     print(f"Using {len(fonts)} fonts:", ", ".join(f.stem for f in fonts[:10]),
           "..." if len(fonts) > 10 else "")
+    if args.italic_english is not None and not any(is_italic(f) for f in fonts):
+        print("Warning: no italic fonts found, so English lines will be upright.")
 
     n_bible = int(args.count * args.bible_share)
     n_english = int(args.count * args.english_share)
@@ -418,7 +478,13 @@ def main() -> None:
     written = skipped = 0
     for line, is_twi in lines:
         text = capitalize_start(to_book_quotes(line), rng)
-        text = add_proverb_number(add_book_quotes(text, rng), rng, args.orthography)
+        text = add_book_quotes(text, rng)
+        if not is_twi and args.paren_english and rng.random() < args.paren_english:
+            # The book's explanations run over several lines, so a line may
+            # hold the opening bracket, the closing one, or both.
+            text = rng.choice([f"({text})", f"({text}", f"{text})"])
+        if is_twi or not args.no_english_numbers:
+            text = add_proverb_number(text, rng, args.orthography, args.number_period)
         if old_style:
             if is_twi:
                 text = orthography.add_period_marks(orthography.to_christaller(text), rng)
@@ -427,7 +493,12 @@ def main() -> None:
                 skipped += 1
                 continue
         else:
-            image = render(text, rng.choice(fonts), rng)
+            italic_share = args.italic_twi if is_twi else args.italic_english
+            if args.italic_english is None and args.italic_twi is None:
+                italic_share = None            # Same font choice as twi_v1 to twi_v4.
+            elif italic_share is None:
+                italic_share = 0.0
+            image = render(text, pick_font(fonts, italic_share, rng), rng)
         written += 1
         stem = out_dir / f"{prefix}_{written:06d}"
         image.save(stem.with_suffix(".png"))

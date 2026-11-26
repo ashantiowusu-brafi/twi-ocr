@@ -24,6 +24,13 @@ else
   echo "Note: data/twi_ghananlp.txt not found, so the app's l -> i fix will be off." >&2
 fi
 
+# Tesseract and its libraries, packed inside so people need not install it.
+# Set SKIP_TESSERACT=1 to leave it out (people then install it with Homebrew).
+if [ "${SKIP_TESSERACT:-0}" != "1" ]; then
+  python app/bundle_tesseract_mac.py app/build/tesseract
+  EXTRA+=(--add-data "$ROOT/app/build/tesseract:tesseract")
+fi
+
 pyinstaller --noconfirm --windowed --name "Twi OCR" \
   --distpath app/dist --workpath app/build --specpath app/build \
   --paths "$ROOT" --hidden-import postcorrect --hidden-import orthography \

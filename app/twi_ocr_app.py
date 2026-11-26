@@ -44,7 +44,15 @@ import orthography   # noqa: E402  (needs the path above)
 UI_FILE = APP_DIR / "ui" / "index.html"
 MODELS = PROJECT / "models"
 WORD_LIST = PROJECT / "data" / "twi_ghananlp.txt"
-SETTINGS_FILE = Path.home() / "Library" / "Application Support" / "Twi OCR" / "settings.json"
+IS_WINDOWS = sys.platform == "win32"
+IS_MAC = sys.platform == "darwin"
+if IS_WINDOWS:   # Settings live where each system keeps app settings.
+    SETTINGS_DIR = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "Twi OCR"
+elif IS_MAC:
+    SETTINGS_DIR = Path.home() / "Library" / "Application Support" / "Twi OCR"
+else:
+    SETTINGS_DIR = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "Twi OCR"
+SETTINGS_FILE = SETTINGS_DIR / "settings.json"
 DEFAULT_OUTPUT = Path.home() / "Documents" / "Twi OCR"
 # Integer ("fast") copies of the models, made once with Tesseract's combine_tessdata.
 # They read about twice as fast and may misread a few more letters.
@@ -57,13 +65,28 @@ PREVIEW_WIDTH = 2400   # Width of the page image shown in the window.
 # faster on more for one page), so use every core but one, up to 8.
 WORKERS = max(1, min(8, (os.cpu_count() or 2) - 1))
 
-# Apps opened from Finder do not see the Terminal's PATH, so look where
-# Tesseract is usually installed (Homebrew, MacPorts, conda).
-TESSERACT_PLACES = [
-    "/opt/homebrew/bin/tesseract", "/usr/local/bin/tesseract", "/opt/local/bin/tesseract",
-    "/opt/anaconda3/bin/tesseract", str(Path.home() / "anaconda3/bin/tesseract"),
-    str(Path.home() / "miniconda3/bin/tesseract"),
-]
+# Apps opened from Finder or the Start menu may not see the Terminal's PATH, so
+# look where Tesseract is usually installed: Homebrew, MacPorts and conda on a
+# Mac; the UB Mannheim installer, Chocolatey, Scoop and conda on Windows.
+if IS_WINDOWS:
+    _program_files = [os.environ.get(v) for v in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA")]
+    TESSERACT_PLACES = [str(Path(p) / sub / "tesseract.exe") for p in _program_files if p
+                        for sub in ("Tesseract-OCR", "Programs/Tesseract-OCR")] + [
+        r"C:\ProgramData\chocolatey\bin\tesseract.exe",
+        str(Path.home() / "scoop" / "shims" / "tesseract.exe"),
+        str(Path.home() / "anaconda3" / "Library" / "bin" / "tesseract.exe"),
+        str(Path.home() / "miniconda3" / "Library" / "bin" / "tesseract.exe"),
+    ]
+else:
+    TESSERACT_PLACES = [
+        "/opt/homebrew/bin/tesseract", "/usr/local/bin/tesseract", "/opt/local/bin/tesseract",
+        "/opt/anaconda3/bin/tesseract", str(Path.home() / "anaconda3/bin/tesseract"),
+        str(Path.home() / "miniconda3/bin/tesseract"), "/usr/bin/tesseract",
+    ]
+# A copy of Tesseract packed inside the app (the Windows build includes one).
+BUNDLED_TESSERACT = APP_DIR / "tesseract" / ("tesseract.exe" if IS_WINDOWS else "tesseract")
+# On Windows, keep each Tesseract run from flashing a console window.
+NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if IS_WINDOWS else {}
 
 SPELLINGS = {
     # model file, Tesseract page mode (6 keeps 1879 proverb numbers on their lines)
@@ -90,8 +113,8 @@ def save_settings(settings: dict) -> None:
 
 
 def find_tesseract(saved: str = "") -> str | None:
-    """Return the path to Tesseract: the saved one, then PATH, then usual places."""
-    for candidate in [saved, shutil.which("tesseract"), *TESSERACT_PLACES]:
+    """Return the path to Tesseract: the saved one, the app's own copy, then PATH and usual places."""
+    for candidate in [saved, str(BUNDLED_TESSERACT), shutil.which("tesseract"), *TESSERACT_PLACES]:
         if candidate and Path(candidate).is_file() and os.access(candidate, os.X_OK):
             return candidate
     return None
@@ -99,7 +122,7 @@ def find_tesseract(saved: str = "") -> str | None:
 
 def tesseract_version(path: str) -> str:
     try:
-        out = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=10)
+        out = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=10, **NO_WINDOW)
         first = (out.stdout or out.stderr).splitlines()[0]
         return first.replace("tesseract", "Tesseract").strip()
     except (OSError, IndexError, subprocess.SubprocessError):
@@ -116,7 +139,7 @@ def fast_models(tesseract: str, model: str) -> Path | None:
     target = FAST_MODELS / f"{model}.traineddata"
     if target.exists() and target.stat().st_mtime >= source.stat().st_mtime:
         return FAST_MODELS
-    combine = Path(tesseract).with_name("combine_tessdata")
+    combine = Path(tesseract).with_name("combine_tessdata.exe" if IS_WINDOWS else "combine_tessdata")
     if not combine.exists():
         combine = Path(shutil.which("combine_tessdata") or "")
     if not combine.is_file():
@@ -126,7 +149,7 @@ def fast_models(tesseract: str, model: str) -> Path | None:
     shutil.copyfile(source, temp)
     os.chmod(temp, 0o644)
     try:
-        done = subprocess.run([str(combine), "-c", str(temp)], capture_output=True, timeout=300)
+        done = subprocess.run([str(combine), "-c", str(temp)], capture_output=True, timeout=300, **NO_WINDOW)
     except (OSError, subprocess.SubprocessError):
         temp.unlink(missing_ok=True)
         return None
@@ -178,7 +201,35 @@ def list_pages(inputs: list[Path]) -> list[dict]:
             pages += [{"pdf": item, "number": n, "name": f"{item.stem}-{n:03d}"} for n in range(1, count + 1)]
         else:
             pages.append({"file": item, "name": item.stem})
+    for seq, page in enumerate(pages, 1):   # Page number across everything opened, from 1.
+        page["seq"] = seq
     return pages
+
+
+def choose_pages(mode: str, custom: str, total: int) -> list[int]:
+    """Page numbers to read, as in a print dialog: all, odd, even, or custom ("1-5, 8, 11-13")."""
+    if mode == "odd":
+        return list(range(1, total + 1, 2))
+    if mode == "even":
+        return list(range(2, total + 1, 2))
+    if mode != "custom":
+        return list(range(1, total + 1))
+    chosen: set[int] = set()
+    for part in (custom or "").replace(" ", "").split(","):
+        if not part:
+            continue
+        bounds = part.split("-")
+        if len(bounds) > 2 or not all(b.isdigit() for b in bounds):
+            raise ValueError(f"“{part}” is not a page or range. Write pages like 1-5, 8, 11-13.")
+        first, last = int(bounds[0]), int(bounds[-1])
+        if first > last:
+            first, last = last, first
+        if first < 1 or last > total:
+            raise ValueError(f"“{part}” is outside pages 1–{total}.")
+        chosen.update(range(first, last + 1))
+    if not chosen:
+        raise ValueError("Write the pages to read, like 1-5, 8, 11-13.")
+    return sorted(chosen)
 
 
 def render_page(page: dict, max_width: int | None = None):
@@ -254,6 +305,7 @@ class Api:
             "models": {key: (MODELS / f"{s['model']}.traineddata").exists() for key, s in SPELLINGS.items()},
             "word_list": WORD_LIST.exists(),
             "workers": WORKERS, "cores": os.cpu_count(),
+            "platform": "windows" if IS_WINDOWS else "mac" if IS_MAC else "linux",
             "settings": self._settings,
         }
 
@@ -265,7 +317,8 @@ class Api:
 
     def choose_tesseract(self) -> dict:
         import webview
-        picked = self._window.create_file_dialog(webview.FileDialog.OPEN, directory="/opt/homebrew/bin")
+        start = os.environ.get("ProgramFiles", "C:\\") if IS_WINDOWS else "/opt/homebrew/bin"
+        picked = self._window.create_file_dialog(webview.FileDialog.OPEN, directory=start)
         if picked:
             self._settings["tesseract"] = picked[0]
             save_settings(self._settings)
@@ -290,7 +343,14 @@ class Api:
         return list(picked or [])
 
     # Reading
-    def start(self, paths: list[str], spelling: str) -> dict:
+    def count_pages(self, paths: list[str]) -> dict:
+        """How many pages the chosen PDFs and images have, for the page choice."""
+        try:
+            return {"pages": len(list_pages(collect_inputs(paths)))}
+        except Exception as error:
+            return {"pages": 0, "error": str(error)}
+
+    def start(self, paths: list[str], spelling: str, page_mode: str = "all", custom: str = "") -> dict:
         if self._busy:
             return {"ok": False, "error": "Already reading."}
         if spelling not in SPELLINGS:
@@ -304,6 +364,13 @@ class Api:
         inputs = collect_inputs(paths)
         if not inputs:
             return {"ok": False, "error": "No PDFs or images were found in what you chose."}
+        try:   # Check the page choice before starting, so a typo is shown at once.
+            total = len(list_pages(inputs))
+            choose_pages(page_mode, custom, total)
+        except ValueError as error:
+            return {"ok": False, "error": str(error)}
+        except Exception as error:
+            return {"ok": False, "error": f"Could not open the files: {error}"}
         self._busy = True
         self._cancel = threading.Event()
         self._spelling = spelling
@@ -311,7 +378,7 @@ class Api:
             self._source_name = Path(paths[0]).name   # A folder: name the results after it.
         else:
             self._source_name = inputs[0].name if len(inputs) == 1 else f"{len(inputs)} files"
-        threading.Thread(target=self._read_all, args=(inputs, spelling, tesseract), daemon=True).start()
+        threading.Thread(target=self._read_all, args=(inputs, spelling, tesseract, page_mode, custom), daemon=True).start()
         return {"ok": True}
 
     def _report(self, function: str, *args) -> None:
@@ -325,33 +392,50 @@ class Api:
             for proc in self._procs:
                 proc.terminate()
 
-    def _tesseract(self, tesseract: str, image: Path, model: str, psm: int, tessdata: Path = MODELS) -> str:
-        """Read one page image and return its text in NFC form (as ocr.py does)."""
+    def _tesseract(self, tesseract: str, image: Path | None, model: str, psm: int,
+                   tessdata: Path = MODELS, data: bytes | None = None) -> str:
+        """Read one page image and return its text in NFC form (as ocr.py does).
+
+        Give either ``image`` (a file) or ``data`` (the image's bytes, sent to
+        Tesseract directly; used on Windows, where it may not open file paths
+        that contain letters such as ɛ or ɔ).
+        """
+        source = "stdin" if data is not None else str(image)
         proc = subprocess.Popen(
-            [tesseract, str(image), "stdout", "-l", model, "--tessdata-dir", str(tessdata), "--psm", str(psm)],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
+            [tesseract, source, "stdout", "-l", model, "--tessdata-dir", str(tessdata), "--psm", str(psm)],
+            stdin=subprocess.PIPE if data is not None else None,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             env=dict(os.environ, OMP_THREAD_LIMIT="1"),   # One core each; pages run side by side.
+            **NO_WINDOW,
         )
         with self._lock:
             self._procs.add(proc)
         try:
-            out, err = proc.communicate()
+            out, err = proc.communicate(input=data)
         finally:
             with self._lock:
                 self._procs.discard(proc)
         if self._cancel.is_set():
             raise Cancelled()
+        err_text = err.decode("utf-8", errors="replace").strip()
         if proc.returncode != 0:
-            raise RuntimeError(err.strip().splitlines()[-1] if err.strip() else "Tesseract stopped with an error.")
-        return unicodedata.normalize("NFC", out)
+            raise RuntimeError(err_text.splitlines()[-1] if err_text else "Tesseract stopped with an error.")
+        return unicodedata.normalize("NFC", out.decode("utf-8", errors="replace"))
 
     def _read_one(self, index: int, page: dict, tesseract: str, settings: dict, correct, old_style: bool,
                   tessdata: Path) -> dict:
         """Read one page. A PDF page is drawn to a temporary PNG, read, and the PNG deleted."""
         if self._cancel.is_set():
             raise Cancelled()
-        temp = None
-        if "file" in page:
+        temp, data, image = None, None, None
+        if IS_WINDOWS:   # Send the image itself, so no file path is involved.
+            if "file" in page:
+                data = Path(page["file"]).read_bytes()
+            else:
+                buf = io.BytesIO()
+                render_page(page).convert("L").save(buf, format="PNG", compress_level=1)
+                data = buf.getvalue()
+        elif "file" in page:
             image = page["file"]
         else:
             temp = Path(self._tmp.name) / f"page-{index:05d}.png"
@@ -359,7 +443,7 @@ class Api:
             render_page(page).convert("L").save(temp, compress_level=1)
             image = temp
         try:
-            text = self._tesseract(tesseract, image, settings["model"], settings["psm"], tessdata)
+            text = self._tesseract(tesseract, image, settings["model"], settings["psm"], tessdata, data)
         finally:
             if temp:
                 temp.unlink(missing_ok=True)
@@ -372,7 +456,7 @@ class Api:
             "modern": orthography.to_modern(text).rstrip() + "\n" if old_style else None,
         }
 
-    def _read_all(self, inputs: list[Path], spelling: str, tesseract: str) -> None:
+    def _read_all(self, inputs: list[Path], spelling: str, tesseract: str, page_mode: str = "all", custom: str = "") -> None:
         settings = SPELLINGS[spelling]
         old_style = spelling == "basel1879"
         fix_il = self._settings.get("fix_il", True) and not old_style
@@ -388,6 +472,8 @@ class Api:
                 else:
                     notes.append("Fast reading was not available, so pages were read with the full model.")
             pages = list_pages(inputs)
+            wanted = set(choose_pages(page_mode, custom, len(pages)))
+            pages = [page for page in pages if page["seq"] in wanted]
             total = len(pages)
             results: list[dict | None] = [None] * total
             failed: list[str] = []
@@ -422,6 +508,7 @@ class Api:
                 shown = ", ".join(failed[:5]) + (f" and {len(failed) - 5} more" if len(failed) > 5 else "")
                 notes.append(f"Could not read {shown}; those pages are empty.")
             self._pages = kept
+            self._report("onPages", [page["seq"] for page in kept])
             self._report("onDone", len(kept), self._source_name, settings["label"],
                          model_label, bool(correct), old_style, " ".join(notes), round(time.monotonic() - started))
         except Exception as error:   # Shown in the window instead of crashing.
@@ -447,19 +534,21 @@ class Api:
     def save(self, index: int | None = None, name: str = "", start: int = 1) -> dict:
         """Save one page (index) or every page as name_001.txt, name_002.txt, ...
 
-        Pages are numbered in order from ``start``, in a folder called ``name``
-        inside the output folder. A Basel Twi 1879 page also gets name_001.modern.txt.
+        Each file is numbered by its page in the PDF, counted from ``start``, so
+        reading only odd pages saves name_001, name_003, ... It goes in a folder called
+        ``name`` inside the output folder. A Basel Twi 1879 page also gets name_001.modern.txt.
         """
         name = clean_name(name) or self.default_name()
         start = max(0, int(start or 0))
-        width = max(3, len(str(start + len(self._pages) - 1)))
+        last = max((page.get("seq", i + 1) for i, page in enumerate(self._pages)), default=1)
+        width = max(3, len(str(start + last - 1)))
         out = Path(self._settings["output"]) / name
         out.mkdir(parents=True, exist_ok=True)
         chosen = range(len(self._pages)) if index is None else [index]
         written: list[str] = []
         for i in chosen:
             page = self._pages[i]
-            stem = f"{name}_{start + i:0{width}d}"
+            stem = f"{name}_{start + page.get('seq', i + 1) - 1:0{width}d}"
             (out / f"{stem}.txt").write_text(page["text"], encoding="utf-8")
             written.append(f"{stem}.txt")
             if page["modern"] is not None and self._settings.get("modern_copy", True):
@@ -468,11 +557,18 @@ class Api:
         return {"folder": str(out), "files": len(written), "first": written[0] if written else ""}
 
     def reveal(self, folder: str) -> None:
-        subprocess.run(["open", folder])
+        """Open the folder in Finder (Mac) or File Explorer (Windows)."""
+        if IS_WINDOWS:
+            os.startfile(folder)   # noqa: S606  (opens the folder in File Explorer)
+        elif IS_MAC:
+            subprocess.run(["open", folder])
+        else:
+            subprocess.run(["xdg-open", folder])
 
     def open_link(self, url: str) -> None:
         if url.startswith("https://github.com/ashantiowusu-brafi/"):
-            subprocess.run(["open", url])
+            import webbrowser
+            webbrowser.open(url)
 
 
 def bind_drop(window, api: Api) -> None:

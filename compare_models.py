@@ -13,6 +13,11 @@ How it works:
        same set.
     3. Adds post-correction rows for the reference model (public word list
        and, if available, the private one).
+    If exact transcriptions of whole pages are in private/eval_pages/, each
+    model is also scored on them: "Page CER" (everything on the page) and
+    "English CER" (the English lines only, which the book prints in italics;
+    issue T7). The answer key's English columns are not used: they are
+    reworded, not the book's exact text.
     4. Writes the table to eval/bu_me_be_results.md, and per-proverb details
        (which contain book text, and say which scan each proverb is on) to
        private/eval_details/.
@@ -22,10 +27,14 @@ Inputs:
     private/scans/                  Page images.
     models/*.traineddata            Twi models, e.g. twi_v1 … twi_v4, twi_1879.
     private/scan_index.csv          Optional manual page ranges (file,first,last).
+    private/eval_pages/<scan>.txt   Optional exact transcription of a whole scan
+                                    (same name as the scan, .txt), proofread
+                                    line by line against the page.
 
 Outputs:
     eval/bu_me_be_results.md                 Combined results (no book text; publishable).
     private/eval_details/<model>.csv
+    private/eval_details/<model>_pages.csv        Line-by-line page scores (with eval_pages).
     private/eval_details/ocr/<model>/<scan>.txt   Cached OCR output.
 
 Usage:
@@ -54,6 +63,7 @@ import postcorrect as pc
 ANSWER_KEY = Path("private/Akan_Proverbs.xlsx")
 SCAN_DIR = Path("private/scans")
 SCAN_INDEX = Path("private/scan_index.csv")
+EVAL_PAGES = Path("private/eval_pages")
 MODELS_DIR = Path("models")
 DETAILS_DIR = Path("private/eval_details")
 RESULTS_MD = Path("eval/bu_me_be_results.md")
@@ -65,6 +75,15 @@ MAX_SPREAD = 60            # Proverb numbers this far from a page's median are n
 MAX_LINES_PER_PROVERB = 4  # A proverb may wrap over this many printed lines.
 STOCK_MODEL = "eng"
 
+# A line of an exact page transcription counts as English if it has no ɛ/ɔ and
+# at least two common English words. Words that are also Twi (a, na, no, so,
+# me, to, ma, wo) are left out.
+ENGLISH_WORDS = set("the is it of and you in that will when which not what if your who with are "
+                    "this for they his their we have has had was were can but one its as by on "
+                    "from them he she i only an or at all there then than would could should been "
+                    "our my him her about into more any some other once our every hence also "
+                    "where how why do does did don't can't it's i'm".split())
+
 # What changed in each model, shown in the results table. Add a line for
 # each new version you train.
 MODEL_NOTES = {
@@ -73,6 +92,7 @@ MODEL_NOTES = {
     "twi_v2": "20,000 lines, 10,000 iterations, more line-initial capitals",
     "twi_v3": "Lookalike characters fixed; proverb numbers before Ɔ/Ɛ-initial lines",
     "twi_v4": "Training text in the book's quote style (“ ” and ’)",
+    "twi_v5": "From twi_v4: more English lines, mostly italic, sans-serif fonts too (issue T7)",
     "twi_1879": "1879-spelling model (writes ɛ ɔ as e̲ o̲); not meant for modern text",
 }
 
@@ -92,11 +112,11 @@ def load_answer_key() -> dict[int, str]:
     return {int(n): normalize(t) for n, t in zip(df[number_col], df[twi_col])}
 
 
-def best_match(reference: str, lines: list[str]) -> tuple[str, int]:
+def best_match(reference: str, lines: list[str], max_lines: int = MAX_LINES_PER_PROVERB) -> tuple[str, int]:
     """Return the run of consecutive OCR lines closest to the reference."""
     best_text, best_distance = "", len(reference)
     for start in range(len(lines)):
-        for size in range(1, MAX_LINES_PER_PROVERB + 1):
+        for size in range(1, max_lines + 1):
             window = lines[start:start + size]
             if len(window) < size:
                 break
@@ -220,6 +240,47 @@ def score(name: str, readings: dict[int, str], answers: dict[int, str],
     }
 
 
+def is_english(line: str) -> bool:
+    """Guess whether a transcribed line is English (see ENGLISH_WORDS)."""
+    if any(c in TWI_SPECIAL_CHARS for c in line):
+        return False
+    words = [w.replace("’", "'") for w in re.findall(r"[a-z’']+", line.lower())]
+    return sum(w in ENGLISH_WORDS for w in words) >= 2
+
+
+def load_eval_pages(scans: list[Path]) -> dict[str, list[str]]:
+    """Return scan name -> lines of its exact transcription, for scans that have one."""
+    pages = {}
+    for scan in scans:
+        path = EVAL_PAGES / f"{scan.stem}.txt"
+        if path.exists():
+            text = unicodedata.normalize("NFC", path.read_text(encoding="utf-8"))
+            pages[scan.name] = [normalize(l) for l in text.splitlines() if l.strip()]
+    return pages
+
+
+def score_pages(name: str, ocr_by_scan: dict[str, str], truth: dict[str, list[str]]) -> dict:
+    """Page CER (whole page) and English CER (English lines) on exact transcriptions."""
+    if not truth:
+        return {"page": None, "english": None}
+    page_edits = page_chars = 0
+    rows = []
+    for scan, lines in truth.items():
+        ocr_text = ocr_by_scan.get(scan, "")
+        reference, hypothesis = normalize(" ".join(lines)), normalize(ocr_text)
+        page_edits += Levenshtein.distance(reference, hypothesis)
+        page_chars += len(reference)
+        ocr_lines = [l for l in ocr_text.splitlines() if l.strip()]
+        for line in lines:
+            if is_english(line):
+                read, edits = best_match(line, ocr_lines, max_lines=2)
+                rows.append({"scan": scan, "reference": line, "ocr": read, "edits": edits, "chars": len(line)})
+    details = pd.DataFrame(rows, columns=["scan", "reference", "ocr", "edits", "chars"])
+    details.to_csv(DETAILS_DIR / f"{name}_pages.csv", index=False, encoding="utf-8")
+    english = details["edits"].sum() / details["chars"].sum() if len(details) else None
+    return {"page": page_edits / max(page_chars, 1), "english": english}
+
+
 def write_results(rows: list[dict], n_proverbs: int, n_scans: int, reference: str) -> None:
     """Write the combined, publishable results table."""
     stock_cer = rows[0]["cer"]
@@ -230,18 +291,34 @@ def write_results(rows: list[dict], n_proverbs: int, n_scans: int, reference: st
         f"All rows are scored on the same {n_proverbs} proverbs from {n_scans} scanned pages, "
         "against the answer key: proverbs 1–320 of the book's 7,015, all proofread.",
         "",
-        "| Model | What changed | CER | Change vs stock | ɛ/ɔ accuracy |",
-        "| --- | --- | --- | --- | --- |",
     ]
+    with_pages = any(r.get("page") is not None for r in rows)
+    pct = lambda v: "—" if v is None else f"{v:.1%}"
+    if with_pages:
+        lines += ["| Model | What changed | CER | Change vs stock | ɛ/ɔ accuracy | Page CER | English CER |",
+                  "| --- | --- | --- | --- | --- | --- | --- |"]
+    else:
+        lines += ["| Model | What changed | CER | Change vs stock | ɛ/ɔ accuracy |",
+                  "| --- | --- | --- | --- | --- |"]
     for r in rows:
         change = "—" if r is rows[0] else f"{(r['cer'] - stock_cer) / stock_cer:+.0%}"
-        lines.append(f"| `{r['name']}` | {r['notes']} | {r['cer']:.1%} | {change} | {r['special']:.1%} |")
+        extra = f" {pct(r.get('page'))} | {pct(r.get('english'))} |" if with_pages else ""
+        lines.append(f"| `{r['name']}` | {r['notes']} | {r['cer']:.1%} | {change} | {r['special']:.1%} |{extra}")
     lines += [
         "",
         "**CER** (character error rate): edits needed to turn the OCR output into the "
         "answer key, divided by the number of characters in the key. Lower is better.",
         "",
         "**ɛ/ɔ accuracy**: share of ɛ, ɔ, Ɛ and Ɔ in the answer key that the OCR read correctly.",
+    ]
+    if with_pages:
+        lines += [
+            "",
+            f"**Page CER** and **English CER**: the same measure on {rows[0].get('n_pages', 0)} pages transcribed "
+            "exactly as printed: the whole page, and only its English lines (translations and explanations, "
+            "printed in italics; issue T7). Post-correction rows score the corrected page.",
+        ]
+    lines += [
         "",
         f"Proverbs are assigned to pages using `{reference}`'s reading of the printed "
         "proverb numbers. Post-correction swaps only l → i, using a Twi word list "
@@ -264,6 +341,9 @@ def main() -> None:
     DETAILS_DIR.mkdir(parents=True, exist_ok=True)
     answers = load_answer_key()
     scans = sorted(p for p in SCAN_DIR.iterdir() if p.suffix.lower() in IMAGE_TYPES)
+    truth = load_eval_pages(scans)
+    if truth:
+        print(f"Exact page transcriptions: {len(truth)} ({', '.join(truth)})")
     models = find_models()
     versioned = [m for m in models if re.search(r"_v\d+$", m)]
     reference = args.reference or (versioned or models)[-1]
@@ -287,7 +367,8 @@ def main() -> None:
         lines_by_scan = {s: [l for l in t.splitlines() if l.strip()] for s, t in all_ocr[model].items()}
         readings = {n: best_match(answers[n], lines_by_scan[s])[0] for n, s in pages.items()}
         row = score(model, readings, answers, pages)
-        row.update(name=model, notes=MODEL_NOTES.get(model, "(add a note in MODEL_NOTES)"))
+        row.update(name=model, notes=MODEL_NOTES.get(model, "(add a note in MODEL_NOTES)"),
+                   n_pages=len(truth), **score_pages(model, all_ocr[model], truth))
         results.append(row)
         if model == reference:
             reference_readings = readings
@@ -303,6 +384,8 @@ def main() -> None:
         vocab = pc.build_vocabulary(available)
         corrected = {n: pc.correct_text(t, vocab) for n, t in reference_readings.items()}
         row = score(f"{reference}_postcorrect_{label}", corrected, answers, pages)
+        corrected_pages = {s: pc.correct_text(t, vocab) for s, t in all_ocr[reference].items()}
+        row.update(score_pages(f"{reference}_postcorrect_{label}", corrected_pages, truth))
         names = ", ".join(s.stem.replace("twi_", "") for s in available)
         row.update(name=f"{reference} + post-correction ({label})",
                    notes=f"l → i word-list fixes; word list: {names} ({len(vocab):,} words)")
@@ -310,7 +393,11 @@ def main() -> None:
 
     write_results(results, len(pages), len(set(pages.values())), reference)
     for r in results:
-        print(f"  {r['name']:<40} CER {r['cer']:.1%}   ɛ/ɔ {r['special']:.1%}")
+        extra = ""
+        if r.get("page") is not None:
+            extra = f"   page {r['page']:.1%}   English {r['english']:.1%}" if r.get("english") is not None \
+                else f"   page {r['page']:.1%}"
+        print(f"  {r['name']:<40} CER {r['cer']:.1%}   ɛ/ɔ {r['special']:.1%}{extra}")
     print(f"\nResults table: {RESULTS_MD}")
     print(f"Per-proverb details: {DETAILS_DIR}/")
 

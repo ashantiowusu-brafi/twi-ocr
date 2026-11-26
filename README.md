@@ -90,23 +90,26 @@ The book's own key to the letters explains most of the marks: line below = open 
 | `orthography.py` | Convert between 1879 and modern spelling (rules in `orthography/christaller_1879.tsv`) |
 | `render_lines.py --orthography 1879` | Render 1879-style training lines |
 | `scripts/train_1879.sh` | Fine-tune `twi_1879` from the best modern model |
+| `scripts/train_twi.sh` | Fine-tune the next modern model (`twi_v5`) from the previous one |
 | `score_1879.py` | Score models on transcribed 1879 pages; writes `eval/christaller_1879/results.md` |
 | `scripts/create_issues.sh` | Open the orthography questions as GitHub issues |
 | `tools/answer_key/` (`review_letters.py`, `spelling_review.py`, `fix_key_quotes.py`) | Answer-key review tools |
 
-Training uses [tesstrain](https://github.com/tesseract-ocr/tesstrain):
+Training uses [tesstrain](https://github.com/tesseract-ocr/tesstrain). The first model was trained from Tesseract's Latin model:
 
 ```
 gmake training MODEL_NAME=twi START_MODEL=Latin TESSDATA=$PWD/tessdata_best \
   GROUND_TRUTH_DIR=../private/ground-truth MAX_ITERATIONS=10000 PY_CMD=$VIRTUAL_ENV/bin/python
 ```
 
+Later versions continue from the previous one. `twi_v5` (issue T7) adds English lines drawn mostly in italics, in sans-serif as well as serif fonts, because *Bu Me Bɛ* prints its English in sans-serif italics; the exact `render_lines.py` options are at the top of `scripts/train_twi.sh`. `compare_models.py` can also score whole pages transcribed exactly as printed (`private/eval_pages/`), including an English-only score; the answer key's English columns are reworded, so they are not used for scoring.
+
 ## Setup
 
 - Python 3.12 (tested with 3.12.2) and `pip install -r requirements.txt`, which installs the exact package versions used for the published results
 - Tesseract 5.5 with training tools (tested with 5.5.4), and GNU make 4.2+ (`gmake`)
 - `Latin.traineddata` from [tessdata_best](https://github.com/tesseract-ocr/tessdata_best)
-- Fonts with ɛ and ɔ, placed in `fonts/`: [Charis SIL](https://software.sil.org/charis/) and [Noto Serif](https://fonts.google.com/noto/specimen/Noto+Serif)
+- Fonts with ɛ and ɔ, placed in `fonts/`: [Charis SIL](https://software.sil.org/charis/) and [Noto Serif](https://fonts.google.com/noto/specimen/Noto+Serif); from `twi_v5`, also [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) (regular, italic, bold and bold italic)
 
 ## What is not in this repository
 
@@ -129,7 +132,7 @@ The `private/` folder is excluded from this version. It holds material that cann
 - tesseract-ocr. *tessdata_best* (`Latin.traineddata`, the base model). Apache-2.0. https://github.com/tesseract-ocr/tessdata_best.
 - tesseract-ocr. *tesstrain*. Apache-2.0. https://github.com/tesseract-ocr/tesstrain.
 - Method followed: NissiKlaus. "Ewe Tesseract OCR," v0.1.0. Hugging Face. https://huggingface.co/NissiKlaus/ewe-tesseract-ocr. (Method only; no files from that repository are used.)
-- Fonts used to render training images: SIL International, *Charis SIL*; Google, *Noto Serif*. Both SIL Open Font License 1.1.
+- Fonts used to render training images: SIL International, *Charis SIL*; Google, *Noto Serif* and (from `twi_v5`) *Noto Sans*. All SIL Open Font License 1.1.
 - Python libraries and their licenses: see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ### Acknowledgements

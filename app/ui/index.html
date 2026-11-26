@@ -10,11 +10,11 @@
 :root { --ink: #1D1D1F; --muted: #3F3F46; --soft: #52525B; --line: #C9C9CF; --panel: #E3E3E8; --blue: #1D4ED8; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: #EDEDF0; color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Helvetica Neue", sans-serif; }
 body { overflow: auto; }
 button { font-family: inherit; color: var(--ink); cursor: pointer; }
 button:disabled { cursor: default; opacity: 0.5; }
-.view { padding: 14px 24px; display: flex; flex-direction: column; gap: 12px; }
+.view { padding: 12px 24px; display: flex; flex-direction: column; gap: 10px; }
 #main { max-width: 960px; margin: 0 auto; }
 .hidden { display: none !important; }
 .label { font-size: 16px; }
@@ -31,19 +31,19 @@ button:disabled { cursor: default; opacity: 0.5; }
 .primary.muted:hover:not(:disabled) { background: #D4D4D8; }
 #review-btn.outline { background: #FFFFFF; color: var(--blue); border: 1px solid var(--blue); }
 #review-btn.outline:hover { background: #EEF2FF; }
-.group { background: var(--panel); border: 1px solid #D4D4DA; border-radius: 10px; padding: 10px 16px 12px;
+.group { background: var(--panel); border: 1px solid #D4D4DA; border-radius: 10px; padding: 8px 16px 10px;
   display: flex; flex-direction: column; gap: 8px; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.spell { text-align: left; background: #FFFFFF; border: 2px solid var(--line); border-radius: 10px; padding: 12px 14px;
-  display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.spell { text-align: left; background: #FFFFFF; border: 2px solid var(--line); border-radius: 10px; padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
 .spell[aria-pressed="true"] { border-color: var(--blue); }
 .glyph { width: 40px; height: 40px; border-radius: 10px; background: #E4E4E7; color: #27272A; display: flex;
   align-items: center; justify-content: center; gap: 3px; font-size: 19px; font-weight: 700; }
 .u { text-decoration: underline; text-underline-offset: 0.16em; text-decoration-thickness: 0.09em; }
 .desc { font-size: 13px; line-height: 1.4; color: var(--muted); }
-#drop { border: 2px dashed #A1A1AA; border-radius: 10px; min-height: 58px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 2px; background: #F4F4F6; color: var(--soft); padding: 8px; text-align: center; }
+#drop { border: 2px dashed #A1A1AA; border-radius: 10px; min-height: 44px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px; background: #F4F4F6; color: var(--soft); padding: 5px; text-align: center; }
 #drop.has-files { border-style: solid; border-color: var(--blue); background: #EEF2FF; color: var(--ink); }
 .check { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .check input { width: 18px; height: 18px; margin: 0; }
@@ -65,6 +65,7 @@ button:disabled { cursor: default; opacity: 0.5; }
 #name-pop { position: absolute; top: calc(100% - 4px); right: 20px; z-index: 5; width: 420px; background: #FFFFFF;
   border: 1px solid #D4D4DA; border-radius: 10px; padding: 14px 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.14);
   display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.inline-input.bad { border-color: #DC2626; background: #FEF2F2; }
 .inline-input { font: inherit; font-size: 14px; color: var(--ink); background: #FFFFFF; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
 #name-pop input { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
 #name-pop .example { font-size: 13px; color: var(--soft); line-height: 1.5; }
@@ -94,6 +95,19 @@ button:disabled { cursor: default; opacity: 0.5; }
 .chars button:hover { background: #F7F7F9; }
 textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; border-radius: 6px; padding: 14px 16px;
   font-family: "Charis Twi", "Charis SIL", "Noto Serif", serif; font-size: 18px; line-height: 1.6; color: var(--ink); outline-color: var(--blue); }
+/* Find bar. Matches are drawn on a layer behind the (transparent) text box. */
+.find { display: flex; align-items: center; gap: 6px; }
+.find input.bad { border-color: #DC2626; background: #FEF2F2; }
+.find input { flex: 1; font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+.find .count { font-size: 12px; color: var(--soft); min-width: 74px; text-align: right; }
+.find button { min-width: 30px; height: 30px; padding: 0 6px; }
+.text-wrap { position: relative; flex: 1; min-height: 0; display: flex; background: #FFFFFF; border-radius: 6px; }
+.text-wrap textarea { background: transparent; position: relative; z-index: 1; }
+#text-hl { position: absolute; inset: 0; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; color: transparent;
+  border: 1px solid transparent; border-radius: 6px; padding: 14px 16px; pointer-events: none;
+  font-family: "Charis Twi", "Charis SIL", "Noto Serif", serif; font-size: 18px; line-height: 1.6; }
+#text-hl mark { background: #FDE68A; color: transparent; border-radius: 2px; }
+#text-hl mark.current { background: #FB923C; }
 .statusbar { height: 34px; display: flex; align-items: center; gap: 18px; padding: 0 20px; border-top: 1px solid #D4D4DA;
   background: #E4E4E8; font-size: 13px; color: var(--muted); }
 #saved { color: #15803D; }
@@ -123,12 +137,12 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
         <span>Tesseract:</span><span class="field" id="tess-path">Not found</span>
         <button class="btn small" id="tess-btn">Choose…</button>
       </div>
-      <div class="desc" style="font-size: 13px">If Tesseract is installed but not found, choose the <code>tesseract</code> program, for example in /opt/homebrew/bin or /usr/local/bin. In Terminal, <code>which tesseract</code> shows where it is.</div>
+      <div class="desc" style="font-size: 13px" id="tess-help">If Tesseract is installed but not found, choose the <code>tesseract</code> program, for example in /opt/homebrew/bin or /usr/local/bin. In Terminal, <code>which tesseract</code> shows where it is.</div>
       <div class="desc" style="font-size: 13px" id="wordlist-note"></div>
     </div>
   </section>
 
-  <section style="display: flex; flex-direction: column; gap: 12px">
+  <section style="display: flex; flex-direction: column; gap: 10px">
     <div class="group">
       <div style="font-size: 15px">1. Choose the spelling of your book</div>
       <div class="grid2">
@@ -152,9 +166,9 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
     <div class="group">
       <div style="font-size: 15px">2. Open your scans</div>
       <div class="grid3">
-        <button class="btn" data-choose="pdf" style="height: 46px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" /><path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" /><path d="M17 18h2" /><path d="M20 15h-3v6" /><path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" /></svg> Open PDF…</button>
-        <button class="btn" data-choose="images" style="height: 46px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 8h.01" /><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12" /><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5" /><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3" /></svg> Open images…</button>
-        <button class="btn" data-choose="folder" style="height: 46px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" /></svg> Open folder…</button>
+        <button class="btn" data-choose="pdf" style="height: 42px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" /><path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" /><path d="M17 18h2" /><path d="M20 15h-3v6" /><path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" /></svg> Open PDF…</button>
+        <button class="btn" data-choose="images" style="height: 42px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 8h.01" /><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12" /><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5" /><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3" /></svg> Open images…</button>
+        <button class="btn" data-choose="folder" style="height: 42px"><svg width="24" height="24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" /></svg> Open folder…</button>
       </div>
       <div id="drop">
         <span style="font-size: 15px; color: var(--muted)" id="drop-title">or drop a PDF or scanned pages here</span>
@@ -164,6 +178,16 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
 
     <div class="group">
       <div style="font-size: 15px">3. Options</div>
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 14px">
+        <label for="page-mode">Pages:</label>
+        <select class="inline-input" id="page-mode" style="padding: 5px 6px">
+          <option value="all">All pages</option><option value="odd">Odd pages</option>
+          <option value="even">Even pages</option><option value="custom">Custom…</option>
+        </select>
+        <input class="inline-input hidden" id="page-custom" style="width: 200px" spellcheck="false"
+          placeholder="e.g. 1-5, 8, 11-13" aria-label="Pages to read">
+        <span id="pages-info" style="color: var(--soft); font-size: 13px"></span>
+      </div>
       <div class="grid3">
       <label class="check" title="Fix the letter l when it should be i (Modern Twi only)"><input type="checkbox" id="opt-fix"> Fix l read as i (Modern Twi)</label>
       <label class="check" title="Also save a modern-spelling copy of each page (Basel Twi 1879 only)"><input type="checkbox" id="opt-modern"> Modern-spelling copy (Basel 1879)</label>
@@ -248,7 +272,7 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
         </div>
       </div>
       <div class="scan" id="scan"><img id="scan-img" alt="The scanned page"></div>
-      <div style="font-size: 12px; color: var(--soft)">Pinch or hold ⌘ and scroll to zoom; drag to move around the page.</div>
+      <div style="font-size: 12px; color: var(--soft)" id="zoom-hint">Pinch or hold ⌘ and scroll to zoom; drag to move around the page.</div>
     </div>
     <div class="pane">
       <div class="tabs" role="tablist" id="tabs">
@@ -256,7 +280,15 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
         <button role="tab" data-tab="modern" aria-selected="false" id="tab-modern">Modern spelling</button>
       </div>
       <div class="chars" id="chars" aria-label="Special characters"></div>
-      <textarea id="text" spellcheck="false" aria-label="The text read from the page"></textarea>
+      <div class="find hidden" id="find" role="search">
+        <input id="find-q" placeholder="Find on this page" spellcheck="false" aria-label="Find on this page">
+        <span class="count" id="find-count"></span>
+        <button class="btn small" id="find-prev" title="Previous (⇧ Return)" aria-label="Previous match"><svg width="16" height="16" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6" /></svg></button>
+        <button class="btn small" id="find-next" title="Next (Return)" aria-label="Next match"><svg width="16" height="16" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6" /></svg></button>
+        <button class="btn small" id="find-close" title="Close (Esc)" aria-label="Close find"><svg width="16" height="16" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg></button>
+      </div>
+      <div class="text-wrap"><div id="text-hl" aria-hidden="true"></div>
+      <textarea id="text" spellcheck="false" aria-label="The text read from the page"></textarea></div>
       <div style="font-size: 12px; color: var(--soft)">Correct the text here; your changes are kept when you save.</div>
     </div>
   </div>
@@ -265,7 +297,7 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
 
 <script>
 const $ = (s) => document.querySelector(s);
-const state = { fileName: "", fileStart: 1, spelling: "modern", paths: [], index: 0, count: 0, tab: "text", page: null, oldStyle: false, settings: {}, zoom: 1,
+const state = { mac: true, pageMode: "all", seqs: [], totalPages: 0, fileName: "", fileStart: 1, spelling: "modern", paths: [], index: 0, count: 0, tab: "text", page: null, oldStyle: false, settings: {}, zoom: 1,
   source: "", dirty: false, confirmRestart: false };
 let api = null;
 
@@ -281,6 +313,13 @@ async function refresh() {
   $("#tess-path").textContent = s.tesseract || "Not found";
   $("#wordlist-note").textContent = s.word_list ? "Word list for the l → i fix: found." :
     "Word list for the l → i fix: not found, so that fix is off. Run `python download.py` in the project folder once to make it.";
+  state.mac = s.platform !== "windows" && s.platform !== "linux";   // ⌘ on a Mac, Ctrl elsewhere.
+  if (!state.mac) {
+    $("#zoom-hint").textContent = "Hold Ctrl and scroll to zoom; drag to move around the page.";
+    $("#tess-help").innerHTML = "The Windows app includes Tesseract. To use another copy, choose <code>tesseract.exe</code>, " +
+      "usually in C:\\Program Files\\Tesseract-OCR. In a command prompt, <code>where tesseract</code> shows where it is.";
+    document.querySelectorAll("[title]").forEach((el) => { el.title = el.title.replace(/⌘/g, "Ctrl+").replace(/⇧ ?/g, "Shift+").replace(/Return/g, "Enter"); });
+  }
   $("#opt-fix").checked = s.settings.fix_il; $("#opt-modern").checked = s.settings.modern_copy;
   $("#opt-fast").checked = s.settings.fast !== false;
   $("#out-path").textContent = s.settings.output;
@@ -303,6 +342,14 @@ function setPaths(paths) {
   $("#start-btn").disabled = paths.length === 0;
   state.newFiles = state.count > 0 && paths.length > 0;   // Chosen after a reading: Start leads again.
   state.fileName = defaultName(); state.fileStart = 1; syncNames();   // New scans: name them after the PDF.
+  $("#page-mode").value = "all"; state.pageMode = "all"; $("#page-custom").classList.add("hidden"); $("#page-custom").value = "";
+  $("#pages-info").textContent = ""; state.totalPages = 0;
+  if (paths.length) api.count_pages(paths).then((r) => {
+    if (state.paths !== paths) return;   // Files changed while counting.
+    state.totalPages = r.pages || 0;
+    $("#pages-info").textContent = r.pages ? `${r.pages} page${r.pages === 1 ? "" : "s"} in what you opened` : "";
+    checkPages();
+  });
   resetRestart(); updateButtons();
 }
 function updateButtons() {
@@ -343,6 +390,7 @@ window.onProgress = (done, total, message) => {
 };
 function hideProgress() { $("#progress").classList.add("hidden"); state.stopping = false; $("#progress-eta").textContent = "This can take a few seconds a page."; }
 window.onError = (message) => { hideProgress(); showBanner("Reading stopped: " + message); };
+window.onPages = (seqs) => { state.seqs = seqs; };
 window.onDone = (count, source, label, model, fixed, oldStyle, note, seconds) => {
   hideProgress();
   $("#st-note").textContent = note || "";
@@ -366,7 +414,8 @@ async function showResults(index) {
   state.page = await api.page(index);
   $("#main").classList.add("hidden"); $("#results").classList.remove("hidden");
   $("#scan-img").onload = () => applyZoom(); $("#scan-img").src = state.page.image;
-  $("#page-label").textContent = `Page ${index + 1} of ${state.count}`;
+  $("#page-label").textContent = `Page ${index + 1} of ${state.count}` +
+    (pageSeq(index) !== index + 1 ? ` · PDF page ${pageSeq(index)}` : "");
   $("#prev-btn").disabled = index === 0; $("#next-btn").disabled = index >= state.count - 1;
   showNames();
   $("#saved").textContent = state.page.error ? "Tesseract could not read this page; type the text in." : "";
@@ -392,6 +441,7 @@ function showTab(tab) {
   document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
   $("#text").value = state.page[tab] || "";
   showChars(state.oldStyle && tab === "text" ? "basel1879" : "modern");
+  runFind();
 }
 
 // ---- Special characters. Letters are inserted at the cursor; marks (shown on a
@@ -464,7 +514,7 @@ function applyMark(mark) {
   ta.value = start + after;
   ta.focus(); ta.selectionStart = ta.selectionEnd = start.length;
   if (state.page) state.page[state.tab] = ta.value;
-  state.dirty = true;
+  state.dirty = true; runFind(true);
   $("#saved").textContent = ""; showHint("");
 }
 function insertText(chars) {
@@ -474,15 +524,74 @@ function insertText(chars) {
   ta.value = before + ta.value.slice(end);
   ta.focus(); ta.selectionStart = ta.selectionEnd = before.length;
   if (state.page) state.page[state.tab] = ta.value;
-  state.dirty = true;
+  state.dirty = true; runFind(true);
   $("#saved").textContent = "";
+}
+
+// ---- Find in the text box (⌘F / Ctrl+F). Not case-sensitive; marks must match (o̲ is not o).
+const finder = { open: false, matches: [], current: -1, length: 0 };
+function escapeHtml(t) { return t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]); }
+function openFind() {
+  finder.open = true; $("#find").classList.remove("hidden");
+  const ta = $("#text"), picked = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+  if (picked && !picked.includes("\n")) $("#find-q").value = picked;   // Search for the selected text.
+  $("#find-q").focus(); $("#find-q").select(); runFind();
+}
+function closeFind() {
+  finder.open = false; $("#find").classList.add("hidden"); $("#text-hl").innerHTML = "";
+  const ta = $("#text"), m = finder.matches[finder.current];
+  ta.focus(); if (m !== undefined) ta.setSelectionRange(m, m + finder.length);   // Cursor on the match.
+  finder.matches = [];
+}
+function runFind(keepPlace) {
+  if (!finder.open) return;
+  const ta = $("#text"), query = $("#find-q").value.normalize("NFC").toLowerCase(), text = ta.value.toLowerCase();
+  const old = finder.matches[finder.current];
+  finder.matches = []; finder.length = query.length;
+  if (query) for (let i = text.indexOf(query); i !== -1; i = text.indexOf(query, i + query.length)) finder.matches.push(i);
+  const from = keepPlace && old !== undefined ? old : ta.selectionStart;
+  const next = finder.matches.findIndex((m) => m >= from);
+  finder.current = finder.matches.length ? (next === -1 ? 0 : next) : -1;
+  drawFind(!keepPlace);
+}
+function stepFind(dir) {
+  const n = finder.matches.length; if (!n) return;
+  finder.current = (finder.current + dir + n) % n; drawFind(true);
+}
+function drawFind(scroll) {
+  const ta = $("#text"), hl = $("#text-hl"), text = ta.value, len = finder.length;
+  let html = "", at = 0;
+  finder.matches.forEach((m, k) => {
+    html += escapeHtml(text.slice(at, m)) + `<mark${k === finder.current ? ' class="current"' : ""}>${escapeHtml(text.slice(m, m + len))}</mark>`;
+    at = m + len;
+  });
+  hl.innerHTML = html + escapeHtml(text.slice(at)) + " ";
+  hl.style.paddingRight = `${16 + Math.max(0, ta.offsetWidth - ta.clientWidth - 2)}px`;   // Room for a scroll bar.
+  const n = finder.matches.length;
+  $("#find-count").textContent = !$("#find-q").value ? "" : n ? `${finder.current + 1} of ${n}` : "No matches";
+  $("#find-q").classList.toggle("bad", !!$("#find-q").value && !n);
+  const mark = hl.querySelector("mark.current");
+  if (mark && scroll) ta.scrollTop = Math.max(0, mark.offsetTop - ta.clientHeight / 3);
+  hl.scrollTop = ta.scrollTop;
 }
 
 // ---- File names: name_001.txt, name_002.txt, … numbered in page order.
 function cleanName(name) { return name.normalize("NFC").trim().replace(/[^\p{L}\p{M}\p{N} ._-]/gu, "_").replace(/^[ .]+|[ .]+$/g, "").slice(0, 80); }
+function pageSeq(index) { return state.seqs[index] ?? index + 1; }   // Its page number in the PDF.
 function fileStem(index) {
-  const width = Math.max(3, String(state.fileStart + state.count - 1).length);
-  return `${state.fileName}_${String(state.fileStart + index).padStart(width, "0")}`;
+  const last = state.seqs.length ? Math.max(...state.seqs) : state.count;
+  const width = Math.max(3, String(state.fileStart + last - 1).length);
+  return `${state.fileName}_${String(state.fileStart + pageSeq(index) - 1).padStart(width, "0")}`;
+}
+const PAGE_LIST = /^\s*\d+(\s*-\s*\d+)?(\s*,\s*\d+(\s*-\s*\d+)?)*\s*,?\s*$/;
+function checkPages() {   // Mark a custom page list that can't be read (bad form or past the last page).
+  const box = $("#page-custom"), text = box.value;
+  let ok = state.pageMode !== "custom" || PAGE_LIST.test(text);
+  if (ok && state.pageMode === "custom" && state.totalPages) {
+    ok = !(text.match(/\d+/g) || []).some((n) => +n < 1 || +n > state.totalPages);
+  }
+  box.classList.toggle("bad", !ok && text.trim() !== "");
+  return ok;
 }
 function defaultName() {
   const first = state.paths.length === 1 ? fileName(state.paths[0]) : state.source || "";
@@ -525,6 +634,13 @@ window.addEventListener("pywebviewready", async () => {
   $("#opt-fix").addEventListener("change", (e) => api.set_option("fix_il", e.target.checked));
   $("#opt-modern").addEventListener("change", (e) => api.set_option("modern_copy", e.target.checked));
   $("#opt-fast").addEventListener("change", (e) => api.set_option("fast", e.target.checked));
+  $("#page-mode").addEventListener("change", (e) => {
+    state.pageMode = e.target.value;
+    $("#page-custom").classList.toggle("hidden", state.pageMode !== "custom");
+    if (state.pageMode === "custom") $("#page-custom").focus();
+    checkPages();
+  });
+  $("#page-custom").addEventListener("input", checkPages);
   $("#start-btn").addEventListener("click", async () => {
     if (state.count && state.dirty && !state.confirmRestart) {
       state.confirmRestart = true;
@@ -536,7 +652,11 @@ window.addEventListener("pywebviewready", async () => {
       return;
     }
     showBanner(""); resetRestart();
-    const r = await api.start(state.paths, state.spelling);
+    if (state.pageMode === "custom" && !checkPages()) {
+      showBanner(`Check the pages to read: write them like 1-5, 8, 11-13` + (state.totalPages ? `, from 1 to ${state.totalPages}.` : "."));
+      return;
+    }
+    const r = await api.start(state.paths, state.spelling, state.pageMode, $("#page-custom").value);
     if (!r.ok) showBanner(r.error); else window.onProgress(0, 0, "Starting…");
   });
   $("#review-btn").addEventListener("click", () => { resetRestart(); showResults(state.index); });
@@ -560,7 +680,7 @@ window.addEventListener("pywebviewready", async () => {
     const r = await api.save(index, state.fileName, state.fileStart);
     if (index === null) state.dirty = false;
     const what = index === null ? `${r.files} files` : r.first + (r.files > 1 ? " and its modern copy" : "");
-    $("#saved").innerHTML = `Saved ${what} · <a href="#" id="reveal">Show in Finder</a>`;
+    $("#saved").innerHTML = `Saved ${what} · <a href="#" id="reveal">${state.mac ? "Show in Finder" : "Show in folder"}</a>`;
     $("#reveal").addEventListener("click", (e) => { e.preventDefault(); api.reveal(r.folder); });
   };
   $("#save-page-btn").addEventListener("click", () => save(state.index));
@@ -598,12 +718,31 @@ window.addEventListener("pywebviewready", async () => {
   window.addEventListener("mouseup", () => { drag = null; scan.classList.remove("dragging"); });
   window.addEventListener("resize", () => { if (!$("#results").classList.contains("hidden")) applyZoom(); });
   document.addEventListener("keydown", (e) => {
-    if (!e.metaKey || $("#results").classList.contains("hidden") || document.activeElement === $("#text")) return;
+    const cmd = state.mac ? e.metaKey : e.ctrlKey;   // ⌘ on a Mac, Ctrl on Windows.
+    if (!cmd || $("#results").classList.contains("hidden") || ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName)) return;
     if (e.key === "=" || e.key === "+") { e.preventDefault(); setZoom(state.zoom * 1.25); }
     else if (e.key === "-") { e.preventDefault(); setZoom(state.zoom / 1.25); }
     else if (e.key === "0") { e.preventDefault(); setZoom(1); }
   });
   $("#save-all-btn").addEventListener("click", () => save(null));
+  // Find
+  $("#find-q").addEventListener("input", () => runFind());
+  $("#find-q").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); stepFind(e.shiftKey ? -1 : 1); }
+    else if (e.key === "Escape") { e.preventDefault(); closeFind(); }
+  });
+  $("#find-next").addEventListener("click", () => stepFind(1));
+  $("#find-prev").addEventListener("click", () => stepFind(-1));
+  $("#find-close").addEventListener("click", closeFind);
+  $("#text").addEventListener("input", () => runFind(true));
+  $("#text").addEventListener("scroll", () => { $("#text-hl").scrollTop = $("#text").scrollTop; });
+  window.addEventListener("resize", () => { if (finder.open) drawFind(false); });
+  document.addEventListener("keydown", (e) => {
+    if (!(e.metaKey || e.ctrlKey) || $("#results").classList.contains("hidden")) return;
+    const key = e.key.toLowerCase();
+    if (key === "f") { e.preventDefault(); openFind(); }
+    else if (key === "g" && finder.open) { e.preventDefault(); stepFind(e.shiftKey ? -1 : 1); }
+  });
 });
 </script>
 </body>

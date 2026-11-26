@@ -1,0 +1,5 @@
+# Packages for building the Windows app (app/build_windows.ps1). Only what the
+# app needs, so the build stays small; versions match requirements.txt.
+-r requirements-app.txt
+pillow==13.0.0
+pypdfium2==5.15.2

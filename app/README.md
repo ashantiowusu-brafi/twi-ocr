@@ -1,8 +1,8 @@
-# Twi OCR desktop app (Mac)
+# Twi OCR desktop app (Mac and Windows)
 
-A window for reading printed Twi without the command line. Choose the spelling of the book (Modern Twi or Basel Twi 1879), open a PDF, images or a folder, and the app reads every page with the `twi` or `twi_1879` model. Check each page next to its scan, correct the text, and save it as numbered `.txt` files. It works offline: scans and text never leave your Mac.
+A window for reading printed Twi without the command line. Choose the spelling of the book (Modern Twi or Basel Twi 1879), open a PDF, images or a folder, and the app reads every page with the `twi` or `twi_1879` model. Check each page next to its scan, correct the text, and save it as numbered `.txt` files. It works offline: scans and text never leave your computer.
 
-This is a first version (issue T5 in `ORTHOGRAPHY.md`). It runs on macOS only for now.
+This is a first version (issue T5 in `ORTHOGRAPHY.md`). The same code runs on macOS and Windows; on Windows, Ctrl takes the place of ⌘.
 
 ## Run it from the project folder
 
@@ -31,10 +31,11 @@ The l → i fix for Modern Twi uses `data/twi_ghananlp.txt`, made by `python dow
 1. **Choose the spelling of your book.** *Modern Twi* uses the `twi` model. *Basel Twi 1879* uses the `twi_1879` model for Christaller-era books, and also makes a modern-spelling copy of each page.
 2. **Open your scans:** a PDF, several images, or a folder. You can also drop them on the window.
 3. **Options:**
+   - *Pages* chooses what to read, as in a print dialog: all pages, odd pages, even pages, or a custom list such as `1-5, 8, 11-13`. Pages are counted across everything you opened, and the app shows how many there are.
    - *Fix l read as i (Modern Twi)* turns on the word-list fix.
    - *Modern-spelling copy (Basel 1879)* saves a `.modern.txt` next to each page.
    - *Faster reading (beta)* reads about twice as fast with a smaller copy of the model (see below).
-   - *Save text to* sets the folder. *File name* and *starting at* set how the pages are named: `name_001.txt`, `name_002.txt`, … The name starts as the PDF's name. Use *starting at* when the PDF begins partway through a book, for example 17 if its first page is page 17.
+   - *Save text to* sets the folder. *File name* and *starting at* set how the pages are named: `name_001.txt`, `name_002.txt`, … The name starts as the PDF's name. Use *starting at* when the PDF begins partway through a book, for example 17 if its first page is page 17. Files are numbered by their page in the PDF, so reading only odd pages saves `name_001`, `name_003`, …
 
 Press **Start reading**. The progress window shows how many pages are done and about how long is left. **Cancel** stops and keeps the pages already read.
 
@@ -44,6 +45,7 @@ Press **Start reading**. The progress window shows how many pages are done and a
 - **Text on the right:** correct it there. For a Basel Twi 1879 book there are two tabs, *As printed (1879)* and *Modern spelling*.
 - **Special characters:** the buttons above the text put a letter where the cursor is. They change with the spelling: ɛ Ɛ ɔ Ɔ for Modern Twi; e̲ o̲ E̲ O̲ ṅ w̌ ã ẽ ĩ õ ũ for 1879.
 - **Marks** (shown on a dotted circle) go on the letter just before the cursor: tone marks, tilde, macron, breve, caron, dot below and line below. Each letter keeps one mark above and one below, except that a tilde can sit with an acute or grave accent (ã́). Clicking a mark the letter already has takes it off. The line below only goes on e and o.
+- **Find:** ⌘F (or Ctrl+F) opens a find bar above the text. Every match is highlighted and the current one is orange; Return goes to the next, ⇧ Return to the previous, and Esc closes it with the cursor on the match. It ignores capitals but not marks, so o̲ finds o̲ and not o.
 - **Files:** shows the file name and numbering, and can change them. These are the same settings as on the start page.
 - **Saving:** *Save page* saves the page you are on; *Save all pages* saves every page. Saving again overwrites the same files, so you can save after more corrections.
 - **Status bar:** the bar at the bottom shows the model, how long the reading took, and any pages that could not be read. A page Tesseract cannot read is left empty for you to type in.
@@ -64,11 +66,19 @@ On one Mac, *Bu Me Bɛ* read at about 1.4 seconds a page with faster reading on 
 bash app/build_mac.sh
 ```
 
-This makes `app/dist/Twi OCR.app` and `app/dist/Twi-OCR.dmg` (about 100–200 MB). The models, the 1879 spelling rules and, if present, the word list are packed inside. `app/build/` holds temporary files and can be deleted. Both folders are kept out of git. Attach the `.dmg` to a GitHub release to share it.
+This makes `app/dist/Twi OCR.app` and `app/dist/Twi-OCR.dmg` (about 100–200 MB). The models, the 1879 spelling rules, Tesseract and, if present, the word list are packed inside. Tesseract is copied from your Homebrew installation with the libraries it needs by `bundle_tesseract_mac.py`, which points it at its own copies and signs them again, so the app runs on Macs without Homebrew. To leave Tesseract out, run `SKIP_TESSERACT=1 bash app/build_mac.sh`. The app is built for the kind of Mac it is built on (Apple Silicon here). `app/build/` holds temporary files and can be deleted. Both folders are kept out of git. Attach the `.dmg` to a GitHub release to share it.
 
-## What people need
+## Windows
 
-- **Tesseract 5.** The app is not yet bundled with Tesseract. It looks in the usual install places (Homebrew, MacPorts, conda); if Tesseract is elsewhere, open **Settings** and choose the `tesseract` program. Faster reading also needs `combine_tessdata`, which comes with Tesseract.
+The Windows app is built on GitHub, so no Windows computer is needed to make it: in the repository's **Actions** tab, choose **Build Windows app** and **Run workflow**. It takes the models from a release (v1.0 unless you choose another), builds the GhanaNLP word list, installs Tesseract and packs everything into `Twi-OCR-Windows.zip`. The zip appears under the run's **Artifacts**, and is attached to a release if you name one. To build on a Windows PC instead, see the top of `build_windows.ps1`.
+
+To use it, unzip the folder and open **Twi OCR.exe**. Tesseract is included, so nothing else needs installing. Windows 10 and 11 already have the WebView2 component the window uses. The app is not signed, so the first time Windows may show "Windows protected your PC": choose **More info**, then **Run anyway**.
+
+Settings are saved in `%APPDATA%\Twi OCR\settings.json`, and text by default in `Documents\Twi OCR\`. Page images are sent to Tesseract directly rather than through files, because Tesseract on Windows may not open paths that contain letters such as ɛ or ɔ. Faster reading keeps its smaller model copies in `%APPDATA%\Twi OCR\fast-models\`; if your Windows user name contains such letters and every page fails with it on, untick Faster reading.
+
+## What people need (Mac)
+
+- **Nothing else to install.** Tesseract is included. The app uses its own copy first; to use another, open **Settings** and choose the `tesseract` program. When run from the project folder (`python app/twi_ocr_app.py`), it uses your installed Tesseract instead.
 - **Opening an unsigned app.** The app is not signed with an Apple Developer ID, so the first time macOS will say it cannot check it. Right-click the app and choose **Open**, or open it from **System Settings → Privacy & Security → Open Anyway**. Signing and notarising need a paid Apple Developer account.
 
 ## Files
@@ -81,8 +91,10 @@ This makes `app/dist/Twi OCR.app` and `app/dist/Twi-OCR.dmg` (about 100–200 MB
 | `ui/icons-LICENSE.txt` | Licence for the Tabler icons in `ui/index.html`. |
 | `requirements-app.txt` | Extra Python packages for the app and for building it. |
 | `build_mac.sh` | Builds the `.app` and `.dmg`. |
+| `bundle_tesseract_mac.py` | Copies Tesseract and its libraries into one folder for the Mac app (run by `build_mac.sh`). |
+| `build_windows.ps1`, `requirements-windows.txt` | Build the Windows app folder and `Twi-OCR-Windows.zip`, with Tesseract inside; run by `.github/workflows/build-windows.yml`. |
 
-Settings (Tesseract location, output folder, options) are saved in `~/Library/Application Support/Twi OCR/settings.json`. Text is saved by default to `~/Documents/Twi OCR/<file name>/`, one `.txt` per page, plus `.modern.txt` for Basel Twi 1879.
+Settings (Tesseract location, output folder, options) are saved in `~/Library/Application Support/Twi OCR/settings.json` on a Mac. Text is saved by default to `~/Documents/Twi OCR/<file name>/`, one `.txt` per page, plus `.modern.txt` for Basel Twi 1879.
 
 ## Licences
 

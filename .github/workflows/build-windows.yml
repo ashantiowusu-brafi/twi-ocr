@@ -1,0 +1,61 @@
+# Build the Windows app on GitHub's Windows machines.
+# Run it from the repository's Actions tab ("Build Windows app" > "Run workflow").
+# The zip is kept as a download on the run's page, and attached to a release
+# if you give one.
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+    inputs:
+      models_release:
+        description: "Release to take the model files from"
+        default: "v1.0"
+        required: true
+      attach_to:
+        description: "Release to attach Twi-OCR-Windows.zip to (leave empty to skip)"
+        default: ""
+        required: false
+
+permissions:
+  contents: write   # to attach the zip to a release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Models
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "${{ inputs.models_release }}" --pattern "*.traineddata" --dir models
+
+      - name: Word list for the l -> i fix (public GhanaNLP text)
+        run: |
+          python -m venv .venv-data
+          .venv-data\Scripts\pip install datasets==5.2.0 pandas==3.1.1 openpyxl==3.1.5 huggingface_hub==2.4.0
+          .venv-data\Scripts\python download.py
+
+      - name: Tesseract
+        run: choco install tesseract --no-progress -y
+
+      - name: App packages
+        run: pip install -r app/requirements-windows.txt
+
+      - name: Build
+        run: powershell -ExecutionPolicy Bypass -File app/build_windows.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Twi-OCR-Windows
+          path: app/dist/Twi-OCR-Windows.zip
+
+      - name: Attach to release
+        if: ${{ inputs.attach_to != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ inputs.attach_to }}" app/dist/Twi-OCR-Windows.zip --clobber

@@ -6,7 +6,7 @@ This project's own code is MIT-licensed. It depends on, or was built with, the c
 
 | Component | Used for | License |
 | --- | --- | --- |
-| [Tesseract](https://github.com/tesseract-ocr/tesseract) | OCR engine and training tools | Apache-2.0 |
+| [Tesseract](https://github.com/tesseract-ocr/tesseract) | OCR engine and training tools. The desktop apps include a copy without its language files: on Windows the [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki) build, on a Mac the Homebrew build | Apache-2.0; the libraries included with it (Leptonica, libarchive, libpng, libjpeg-turbo, libtiff, libwebp, giflib, OpenJPEG, zlib, zstd, xz and others) are under their own permissive licences |
 | [tesstrain](https://github.com/tesseract-ocr/tesstrain) | Training workflow | Apache-2.0 |
 | [Ghana Corpus Builder](https://github.com/GhanaNLP/ghana-corpus-builder) | Downloading the Ghana Corpus | MIT |
 | [pandas](https://pandas.pydata.org/) | Tables and spreadsheets | BSD-3-Clause |
@@ -46,5 +46,6 @@ The [Ewe Tesseract OCR](https://huggingface.co/NissiKlaus/ewe-tesseract-ocr) mod
 | --- | --- | --- |
 | [Charis SIL](https://software.sil.org/charis/) | Rendering training images | SIL Open Font License 1.1 (Reserved Font Names "Charis", "SIL") |
 | [Noto Serif](https://fonts.google.com/noto/specimen/Noto+Serif) | Rendering training images | SIL Open Font License 1.1 |
+| [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) | Rendering training images (from `twi_v5`) | SIL Open Font License 1.1 |
 
 The fonts in `fonts/` are not included; download them from the links above. One exception: `app/ui/fonts/Charis-Regular.ttf` is included, unchanged, so the desktop app can show the 1879 marks, with its licence in `app/ui/fonts/OFL.txt`.
