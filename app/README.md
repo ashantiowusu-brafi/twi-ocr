@@ -35,6 +35,7 @@ The l → i fix for Modern Twi uses `data/twi_ghananlp.txt`, made by `python dow
    - *Fix common misreadings (Modern Twi)* turns on the word fixes. In Twi lines it fixes l read for i, using the GhanaNLP word list. In English lines (the book's italic translations) it fixes clear mistakes instead: a capital *Is/It* in mid-sentence, "!" read for l (wil! → will), and ɔ or ɛ inside an English word (ɔver → over). Doubled punctuation such as ";:" is flagged, not changed.
    - *Modern-spelling copy (Basel 1879)* saves a `.modern.txt` next to each page.
    - *Faster reading (beta)* reads about twice as fast with a smaller copy of the model (see below).
+   - *Book layout:* choose *Proverbs* for a book such as Bu Me Bɛ. The results then get an **Entries** tab, and *Save all pages* also writes `name_entries.csv`, a table of every entry (see below). *Plain text* gives the page text only.
    - *Save text to* sets the folder. *File name* and *starting at* set how the pages are named: `name_001.txt`, `name_002.txt`, … The name starts as the PDF's name. Use *starting at* when the PDF begins partway through a book, for example 17 if its first page is page 17. Files are numbered by their page in the PDF, so reading only odd pages saves `name_001`, `name_003`, …
 
 Press **Start reading**. The progress window shows how many pages are done and about how long is left. **Cancel** stops and keeps the pages already read.
@@ -47,6 +48,7 @@ Press **Start reading**. The progress window shows how many pages are done and a
 - **Marks** (shown on a dotted circle) go on the letter just before the cursor: tone marks, tilde, macron, breve, caron, dot below and line below. Each letter keeps one mark above and one below, except that a tilde can sit with an acute or grave accent (ã́). Clicking a mark the letter already has takes it off. The line below only goes on e and o.
 - **Find:** ⌘F (or Ctrl+F) opens a find bar above the text. Every match is highlighted and the current one is orange; Return goes to the next, ⇧ Return to the previous, and Esc closes it with the cursor on the match. It ignores capitals but not marks, so o̲ finds o̲ and not o.
 - **Fixes:** lists every change the word fixes made on the page, with the reason. **Show** selects it in the text and **Undo** puts the original back. Items marked "check" were not changed; look at them yourself.
+- **Entries** (with the *Proverbs* layout): each page sorted into entries, with the number, the Twi proverb, the English translation and the explanation. An entry missing a part, or with a number out of order, has an orange edge so you can check it. Click an entry to see its lines in **Sort lines**, where every line has a P (proverb), T (translation), E (explanation) or – (not part of an entry) button. Move a line by clicking another button. Shift-click sets every line from the last one you set, and the keys P, T, E and X work too. **Teach the app** keeps your sorting of the page and learns from it, so the other pages are sorted with it in mind. The learning is kept between sessions; **Forget what it learned** goes back to the starting rules. The words themselves are corrected on the Text tab, and Entries never changes them: lines are only sorted into columns. The brackets around an explanation are left out of the table, as in the answer key.
 - **Files:** shows the file name and numbering, and can change them. These are the same settings as on the start page.
 - **Saving:** *Save page* saves the page you are on; *Save all pages* saves every page. Saving again overwrites the same files, so you can save after more corrections.
 - **Status bar:** the bar at the bottom shows the model, how long the reading took, and any pages that could not be read. A page Tesseract cannot read is left empty for you to type in.
@@ -90,7 +92,7 @@ Settings are saved in `%APPDATA%\Twi OCR\settings.json`, and text by default in 
 
 | File | What it does |
 | --- | --- |
-| `twi_ocr_app.py` | The app: finds Tesseract, reads pages in parallel, keeps corrections, saves numbered text files. Uses `orthography.py` and `postcorrect.py` from the project. |
+| `twi_ocr_app.py` | The app: finds Tesseract, reads pages in parallel, keeps corrections, saves numbered text files. Uses `orthography.py`, `postcorrect.py` and `structure.py` from the project. |
 | `ui/index.html` | The window's layout, buttons and special-character tools. |
 | `ui/fonts/Charis-Regular.ttf` | Shows the 1879 marks (such as the line under e̲ and o̲) in the text box; the Mac's system font does not draw them. SIL Open Font License, see `ui/fonts/OFL.txt`. |
 | `ui/icons-LICENSE.txt` | Licence for the Tabler icons in `ui/index.html`. |
@@ -99,7 +101,13 @@ Settings are saved in `%APPDATA%\Twi OCR\settings.json`, and text by default in 
 | `bundle_tesseract_mac.py` | Copies Tesseract and its libraries into one folder for the Mac app (run by `build_mac.sh`). |
 | `build_windows.ps1`, `requirements-windows.txt` | Build the Windows app folder and `Twi-OCR-Windows.zip`, with Tesseract inside; run by `.github/workflows/build-windows.yml`. |
 
-Settings (Tesseract location, output folder, options) are saved in `~/Library/Application Support/Twi OCR/settings.json` on a Mac. Text is saved by default to `~/Documents/Twi OCR/<file name>/`, one `.txt` per page, plus `.modern.txt` for Basel Twi 1879.
+Settings (Tesseract location, output folder, options) are saved in `~/Library/Application Support/Twi OCR/settings.json` on a Mac. Text is saved by default to `~/Documents/Twi OCR/<file name>/`, one `.txt` per page, plus `.modern.txt` for Basel Twi 1879, plus `<file name>_entries.csv` with the Proverbs layout.
+
+## How Entries sorts a page
+
+`structure.py` (in the project folder) gives every line a label. It starts from rules that follow how a proverb book is printed: a number starts a proverb, the English lines after it are the translation, and a bracket (or a new sentence after a finished translation, when the bracket was misread) starts the explanation. On top of the rules sits a small model, an averaged perceptron in plain Python, that learns from the pages you sort. It looks at clues such as "starts with a number", "mostly English words", "inside an open bracket" and "the line before was a translation". It runs offline in a fraction of a second a page. What it learns is saved in `~/Library/Application Support/Twi OCR/layouts/proverbs.json` (`%APPDATA%\Twi OCR\layouts\` on Windows), which holds the lines of the pages you taught, so it stays on your computer.
+
+On the 335 OCR pages of Bu Me Bɛ, the starting rules find 97.4% of the answer key's 2,000 numbered proverbs. Of those, the Twi proverb matches the key in 97.9% of entries, and the translation in 93.3%. The explanation matches in 77.4%, mostly because the key rewords many explanations while the app keeps the book's words. When two columns of a page are read in the wrong order, sorting cannot put the lines back. `python eval_structure.py --teach 20` repeats the test (it needs the private pages and answer key).
 
 ## Licences
 

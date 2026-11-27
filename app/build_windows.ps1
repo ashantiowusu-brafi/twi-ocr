@@ -40,7 +40,7 @@ if (Test-Path "data\twi_ghananlp.txt") {
 
 pyinstaller --noconfirm --windowed --name "Twi OCR" `
     --distpath app\dist --workpath app\build\pyinstaller --specpath app\build `
-    --paths "$Root" --hidden-import postcorrect --hidden-import orthography `
+    --paths "$Root" --hidden-import postcorrect --hidden-import orthography --hidden-import structure `
     --exclude-module pandas --exclude-module rapidfuzz --exclude-module numpy `
     --add-data "$Root\app\ui;ui" `
     --add-data "$Root\models\twi.traineddata;models" `

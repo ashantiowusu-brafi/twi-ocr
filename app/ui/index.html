@@ -55,6 +55,13 @@ button:disabled { cursor: default; opacity: 0.5; }
 #banner { border-radius: 8px; padding: 10px 14px; font-size: 14px; background: #FEF2F2; border: 1px solid #FCA5A5; color: #7F1D1D; }
 #settings { background: #FFFFFF; border: 1px solid #D4D4DA; border-radius: 10px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
 /* Progress */
+#confirm { position: fixed; inset: 0; z-index: 20; background: rgba(30,30,40,0.35); display: flex; align-items: center; justify-content: center; }
+#confirm .card { width: 540px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.18); display: flex; flex-direction: column; gap: 12px; }
+#confirm .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.page-jump { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.page-jump input { width: 52px; font: inherit; font-size: 14px; text-align: center; border: 1px solid var(--line);
+  border-radius: 6px; padding: 4px 2px; -moz-appearance: textfield; }
+.page-jump input::-webkit-outer-spin-button, .page-jump input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 #progress { position: fixed; inset: 0; background: rgba(237,237,240,0.92); display: flex; align-items: center; justify-content: center; }
 .progress-card { background: #FFFFFF; border: 1px solid #D4D4DA; border-radius: 12px; padding: 24px 28px; width: 420px;
   display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
@@ -117,6 +124,40 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
   font-family: "Charis Twi", "Charis SIL", "Noto Serif", serif; font-size: 18px; line-height: 1.6; }
 #text-hl mark { background: #FDE68A; color: transparent; border-radius: 2px; }
 #text-hl mark.current { background: #FB923C; }
+/* Entries: each page sorted into proverb, translation, explanation. */
+#entries { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.entries-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.ent-note { color: var(--soft); margin-right: auto; }
+.seg { display: inline-flex; background: #E4E4E7; border-radius: 7px; padding: 2px; }
+.seg button { height: 28px; padding: 0 12px; border: none; border-radius: 5px; background: transparent; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: #FFFFFF; }
+.entries-body { flex: 1; min-height: 0; overflow: auto; border: 1px solid #D4D4DA; border-radius: 6px; background: #FFFFFF; }
+.entry { padding: 10px 12px 10px 10px; border-bottom: 1px solid #ECECEF; display: grid; grid-template-columns: 44px 1fr; column-gap: 6px; cursor: pointer; }
+.entry:hover { background: #FAFAFB; }
+.entry.check { box-shadow: inset 3px 0 0 #F59E0B; }
+.entry .num { color: var(--soft); font-size: 13px; padding-top: 3px; }
+.entry .ef { display: flex; gap: 7px; align-items: baseline; font-size: 14px; line-height: 1.45; margin-top: 3px; }
+.entry .ef .dot { flex: none; position: relative; top: -1px; }
+.entry .ef.twi { font-family: "Charis Twi", "Charis SIL", "Noto Serif", serif; font-size: 16.5px; margin-top: 0; }
+.entry .ef.explanation { color: #3F3F46; }
+.entry .ef.empty { color: #B45309; font-size: 12.5px; }
+.entry .flag { grid-column: 2; font-size: 12px; color: #B45309; margin-top: 4px; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+.lab-proverb { --c: #B45309; --bg: #FEF3C7; }
+.lab-translation { --c: #1D4ED8; --bg: #DBEAFE; }
+.lab-explanation { --c: #15803D; --bg: #DCFCE7; }
+.lab-other { --c: #71717A; --bg: #F4F4F5; }
+.dot.lab-proverb, .dot.lab-translation, .dot.lab-explanation, .dot.lab-other { background: var(--c); }
+.sort-line { display: flex; align-items: flex-start; gap: 8px; padding: 4px 8px; border-bottom: 1px solid #F1F1F3; }
+.sort-line:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
+.sort-line.changed .sort-text { text-decoration: underline dotted #A1A1AA; text-underline-offset: 3px; }
+.sort-picks { display: inline-flex; gap: 2px; flex: none; padding-top: 2px; }
+.sort-picks button { width: 24px; height: 22px; padding: 0; border: 1px solid #E4E4E7; border-radius: 5px; background: #FFFFFF;
+  font-size: 11px; font-weight: 700; color: #A1A1AA; }
+.sort-picks button.on { background: var(--bg); color: var(--c); border-color: var(--c); }
+.sort-text { flex: 1; font-family: "Charis Twi", "Charis SIL", "Noto Serif", serif; font-size: 16px; line-height: 1.45;
+  border-left: 3px solid var(--c); padding-left: 8px; }
+.sort-line.lab-other .sort-text { color: #A1A1AA; }
 .statusbar { height: 34px; display: flex; align-items: center; gap: 18px; padding: 0 20px; border-top: 1px solid #D4D4DA;
   background: #E4E4E8; font-size: 13px; color: var(--muted); }
 #saved { color: #15803D; }
@@ -196,6 +237,11 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
         <input class="inline-input hidden" id="page-custom" style="width: 200px" spellcheck="false"
           placeholder="e.g. 1-5, 8, 11-13" aria-label="Pages to read">
         <span id="pages-info" style="color: var(--soft); font-size: 13px"></span>
+        <label for="layout" style="margin-left: auto" title="Proverbs: the results get an Entries tab that sorts each page into proverb, English translation and explanation, and Save all also writes a table (CSV) of every entry.">Book layout:</label>
+        <select class="inline-input" id="layout" style="padding: 5px 6px">
+          <option value="plain">Plain text</option>
+          <option value="proverbs">Proverbs (Twi · translation · explanation)</option>
+        </select>
       </div>
       <div class="grid3">
       <label class="check" title="Modern Twi only. In Twi words: l read for i. In English lines: it Is → it is, wil! → will, ɔver → over; doubled punctuation is flagged, not changed. Every change is listed under Fixes on the results page, where it can be undone."><input type="checkbox" id="opt-fix"> Fix common misreadings (Modern Twi)</label>
@@ -230,6 +276,17 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
 </main>
 
 <!-- ============ Progress ============ -->
+<div id="confirm" class="hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="card">
+    <div style="font-size: 17px; font-weight: 600" id="confirm-title">Replace your current results?</div>
+    <div style="font-size: 14px; line-height: 1.5" id="confirm-text"></div>
+    <div class="actions">
+      <button class="btn small" id="confirm-cancel">Cancel</button>
+      <button class="btn small" id="confirm-save">Save all pages, then start</button>
+      <button class="primary small" id="confirm-ok" style="height: 36px; padding: 0 16px; font-size: 14px">Start new reading</button>
+    </div>
+  </div>
+</div>
 <div id="progress" class="hidden" role="status" aria-live="polite">
   <div class="progress-card">
     <div style="font-size: 16px; font-weight: 600" id="progress-title">Reading…</div>
@@ -249,7 +306,9 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
       <span class="tag" id="res-spelling"></span>
       <div style="display: flex; align-items: center; gap: 6px">
         <button class="btn icon-btn" id="prev-btn" aria-label="Previous page"><svg width="16" height="16" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 6l-6 6l6 6" /></svg></button>
-        <span style="font-size: 14px; min-width: 110px; text-align: center" id="page-label"></span>
+        <span class="page-jump" id="page-label">Page <input id="page-input" type="number" min="1" step="1"
+          aria-label="Page number: type a page and press Return" title="Type a page number and press Return">
+          of <span id="page-total"></span><span id="page-pdf" style="color: var(--soft)"></span></span>
         <button class="btn icon-btn" id="next-btn" aria-label="Next page"><svg width="16" height="16" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3F3F46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg></button>
       </div>
     </div>
@@ -294,6 +353,7 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
       <div class="tabs" role="tablist" id="tabs">
         <button role="tab" data-tab="text" aria-selected="true" id="tab-text">Text</button>
         <button role="tab" data-tab="modern" aria-selected="false" id="tab-modern">Modern spelling</button>
+        <button role="tab" data-tab="entries" aria-selected="false" id="tab-entries" class="hidden">Entries</button>
       </div>
       <div class="chars" id="chars" aria-label="Special characters"></div>
       <div class="find hidden" id="find" role="search">
@@ -305,7 +365,22 @@ textarea { flex: 1; min-height: 0; resize: none; border: 1px solid #D4D4DA; bord
       </div>
       <div class="text-wrap"><div id="text-hl" aria-hidden="true"></div>
       <textarea id="text" spellcheck="false" aria-label="The text read from the page"></textarea></div>
-      <div style="font-size: 12px; color: var(--soft)">Correct the text here; your changes are kept when you save.</div>
+      <div style="font-size: 12px; color: var(--soft)" id="text-hint">Correct the text here; your changes are kept when you save.</div>
+      <div id="entries" class="hidden">
+        <div class="entries-bar">
+          <span class="seg" role="group" aria-label="View">
+            <button id="ent-table-btn" aria-pressed="true">Entries</button>
+            <button id="ent-sort-btn" aria-pressed="false">Sort lines</button>
+          </span>
+          <span class="ent-note" id="ent-note"></span>
+          <button class="btn small hidden" id="ent-forget" title="Forget every page you have taught and go back to the starting rules">Forget what it learned</button>
+          <button class="btn small hidden" id="ent-reset">Undo changes</button>
+          <button class="primary small hidden" id="ent-teach" style="height: 30px; padding: 0 12px; font-size: 13px">Teach the app</button>
+        </div>
+        <div class="entries-bar" id="ent-legend" style="color: var(--muted)"></div>
+        <div class="entries-body" id="ent-body"></div>
+        <div style="font-size: 12px; color: var(--soft)" id="ent-hint"></div>
+      </div>
     </div>
   </div>
   <div class="statusbar"><span id="st-model"></span><span id="st-fix"></span><span id="st-folder"></span><span id="st-note" style="color: #B45309"></span></div>
@@ -339,6 +414,7 @@ async function refresh() {
   }
   $("#opt-fix").checked = s.settings.fix_il; $("#opt-modern").checked = s.settings.modern_copy;
   $("#opt-fast").checked = s.settings.fast !== false;
+  $("#layout").value = s.settings.layout || "plain";
   $("#out-path").textContent = s.settings.output;
   if (!s.tesseract) { showBanner("Tesseract was not found. Install Tesseract 5, or open Settings and choose where it is."); $("#settings").classList.remove("hidden"); }
   else showBanner("");
@@ -416,6 +492,7 @@ window.onDone = (count, source, label, model, fixed, oldStyle, note, seconds) =>
   $("#res-spelling").textContent = label; $("#res-spelling").classList.toggle("basel", oldStyle);
   $("#tab-text").textContent = oldStyle ? "As printed (1879)" : "Text";
   $("#tab-modern").classList.toggle("hidden", !oldStyle);
+  $("#tab-entries").classList.toggle("hidden", (state.settings.layout || "plain") === "plain");
   const took = seconds >= 60 ? `${Math.floor(seconds / 60)} min ${seconds % 60} s` : `${seconds} s`;
   $("#st-model").textContent = `Model: ${model}` + (seconds !== undefined ? ` · read in ${took} (${(seconds / count).toFixed(1)} s a page)` : "");
   $("#st-fix").textContent = oldStyle ? "Clean-up: on" : `Word fixes: ${fixed ? "on" : "off"}`;
@@ -431,8 +508,9 @@ async function showResults(index) {
   state.page = await api.page(index);
   $("#main").classList.add("hidden"); $("#results").classList.remove("hidden");
   $("#scan-img").onload = () => applyZoom(); $("#scan-img").src = state.page.image;
-  $("#page-label").textContent = `Page ${index + 1} of ${state.count}` +
-    (pageSeq(index) !== index + 1 ? ` · PDF page ${pageSeq(index)}` : "");
+  $("#page-input").value = index + 1; $("#page-input").max = state.count;
+  $("#page-total").textContent = state.count;
+  $("#page-pdf").textContent = pageSeq(index) !== index + 1 ? ` · PDF page ${pageSeq(index)}` : "";
   $("#prev-btn").disabled = index === 0; $("#next-btn").disabled = index >= state.count - 1;
   showNames();
   $("#saved").textContent = state.page.error ? "Tesseract could not read this page; type the text in." : "";
@@ -456,6 +534,10 @@ function setZoom(z, anchor) { state.zoom = Math.min(8, Math.max(0.4, z)); applyZ
 function showTab(tab) {
   state.tab = tab;
   document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+  const entries = tab === "entries";
+  [".text-wrap", "#chars", "#text-hint"].forEach((q) => $(q).classList.toggle("hidden", entries));
+  $("#entries").classList.toggle("hidden", !entries);
+  if (entries) { closeFind(); $("#fix-pop").classList.add("hidden"); loadEntries(); return; }
   $("#text").value = state.page[tab] || "";
   showChars(state.oldStyle && tab === "text" ? "basel1879" : "modern");
   runFind();
@@ -550,6 +632,7 @@ function insertText(chars) {
 const finder = { open: false, matches: [], current: -1, length: 0 };
 function escapeHtml(t) { return t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]); }
 function openFind() {
+  if (state.tab === "entries") return;
   finder.open = true; $("#find").classList.remove("hidden");
   const ta = $("#text"), picked = ta.value.slice(ta.selectionStart, ta.selectionEnd);
   if (picked && !picked.includes("\n")) $("#find-q").value = picked;   // Search for the selected text.
@@ -684,8 +767,90 @@ function undoFix(i) {
   runFind(true); keepEdits(); renderFixes();
 }
 
+// ---- Entries: the page sorted into proverb / translation / explanation. "Sort lines"
+// lets the user move lines between columns; "Teach the app" learns from that for the other pages.
+const ent = { view: "table", data: null, labels: [], saved: [], last: -1 };
+const LAB_KEYS = { proverb: "P", translation: "T", explanation: "E", other: "–" };
+function entLabel(lab) { return (ent.data && ent.data.names[lab]) || lab; }
+async function loadEntries() {
+  ent.data = await api.entries(state.index);
+  ent.labels = ent.data.labels.slice(); ent.saved = ent.data.labels.slice(); ent.last = -1; ent.preview = null;
+  renderEntries();
+}
+function entChanged() { return ent.labels.some((l, i) => l !== ent.saved[i]); }
+function renderEntries() {
+  const d = ent.data;
+  if (!d || d.layout === "plain") { $("#ent-body").innerHTML = ""; return; }
+  $("#ent-table-btn").setAttribute("aria-pressed", String(ent.view === "table"));
+  $("#ent-sort-btn").setAttribute("aria-pressed", String(ent.view === "sort"));
+  const changed = entChanged();
+  $("#ent-teach").classList.toggle("hidden", ent.view !== "sort");
+  $("#ent-teach").disabled = !changed;
+  $("#ent-reset").classList.toggle("hidden", !changed);
+  $("#ent-forget").classList.toggle("hidden", ent.view !== "sort" || !d.taught);
+  $("#ent-forget").textContent = "Forget what it learned"; ent.forgetArmed = false;
+  $("#ent-note").textContent = d.sorted_here ? "You sorted this page." :
+    d.taught ? `Sorted by the app, which has learned from ${d.taught} page${d.taught === 1 ? "" : "s"} you sorted.` :
+    "Sorted by the app's starting rules.";
+  $("#ent-legend").innerHTML = d.order.map((l) => `<span><span class="dot lab-${l}"></span>${escapeHtml(entLabel(l))}` +
+    (ent.view === "sort" ? ` <b style="color: var(--soft)">${LAB_KEYS[l]}</b>` : "") + "</span>").join("<span style='width: 6px'></span>");
+  $("#ent-legend").classList.toggle("hidden", ent.view === "table");
+  if (ent.view === "table") renderEntryTable(); else renderSortLines();
+}
+function renderEntryTable() {
+  const d = ent.data;
+  const rows = ent.preview || d.entries;
+  if (!rows.length) {
+    $("#ent-body").innerHTML = `<div style="padding: 16px; color: var(--soft); font-size: 14px">No entries found on this page. Use Sort lines to show the app where they are.</div>`;
+  } else {
+    const field = (e, lab, cls) => e[lab]
+      ? `<div class="ef ${cls}"><span class="dot lab-${lab}" title="${escapeHtml(entLabel(lab))}"></span><span>${escapeHtml(e[lab])}</span></div>`
+      : (e.continued ? "" : `<div class="ef empty"><span class="dot lab-${lab}"></span><span>No ${escapeHtml(entLabel(lab).toLowerCase())} found</span></div>`);
+    $("#ent-body").innerHTML = rows.map((e, k) => `<div class="entry${e.missing.length || e.out_of_order ? " check" : ""}" data-row="${k}"
+        title="Click to see these lines in Sort lines">
+        <div class="num">${e.continued ? "<span title='Continued from the page before'>↑ cont.</span>" : escapeHtml(e.number)}</div>
+        <div>${field(e, "proverb", "twi")}${field(e, "translation", "translation")}${field(e, "explanation", "explanation")}</div>
+        ${e.out_of_order ? `<div class="flag">Number out of order — check</div>` : ""}</div>`).join("");
+    $("#ent-body").querySelectorAll(".entry").forEach((row) => row.addEventListener("click", () => {
+      const first = rows[+row.dataset.row].lines[0];
+      ent.view = "sort"; renderEntries(); focusLine(first);
+    }));
+  }
+  const checks = rows.filter((e) => e.missing.length || e.out_of_order).length;
+  $("#ent-hint").textContent = `${rows.length} entr${rows.length === 1 ? "y" : "ies"} on this page` +
+    (checks ? `, ${checks} to check.` : ".") + " Correct words on the Text tab; Save all also saves every entry as a table (CSV).";
+}
+function renderSortLines() {
+  const d = ent.data;
+  $("#ent-body").innerHTML = d.lines.map((line, i) => `<div class="sort-line lab-${ent.labels[i]}${ent.labels[i] !== ent.saved[i] ? " changed" : ""}" tabindex="0" data-line="${i}">
+      <span class="sort-picks">${d.order.map((l) => `<button class="lab-${l}${ent.labels[i] === l ? " on" : ""}" data-set="${l}" tabindex="-1"
+        title="${escapeHtml(entLabel(l))} (${LAB_KEYS[l]})" aria-label="${escapeHtml(entLabel(l))}">${LAB_KEYS[l]}</button>`).join("")}</span>
+      <span class="sort-text">${escapeHtml(line)}</span></div>`).join("");
+  $("#ent-body").querySelectorAll(".sort-line").forEach((row) => {
+    row.querySelectorAll("button[data-set]").forEach((b) => b.addEventListener("click", (e) => {
+      setLabel(+row.dataset.line, b.dataset.set, e.shiftKey); }));
+  });
+  $("#ent-hint").textContent = "Click P, T, E or – to move a line (Shift-click to set every line up to the last one you set). " +
+    "Keys: ↑ ↓ to move, P T E or X to set. Then press Teach the app.";
+}
+function setLabel(i, lab, range) {
+  const from = range && ent.last >= 0 ? Math.min(ent.last, i) : i, to = range && ent.last >= 0 ? Math.max(ent.last, i) : i;
+  for (let k = from; k <= to; k++) ent.labels[k] = lab;
+  ent.last = i;
+  const scroll = $("#ent-body").scrollTop;
+  renderEntries(); $("#ent-body").scrollTop = scroll; focusLine(i, false);
+}
+function focusLine(i, scroll = true) {
+  const row = $(`#ent-body .sort-line[data-line="${i}"]`);
+  if (row) { row.focus({ preventScroll: !scroll }); if (scroll) row.scrollIntoView({ block: "center" }); }
+}
+
 async function keepEdits() {
-  if (state.page) {
+  // Leaving a page with lines re-sorted but not taught yet: keep (and learn from) them.
+  if (state.page && state.tab === "entries" && ent.data && ent.data.lines && entChanged()) {
+    ent.data = await api.teach(state.index, ent.labels); ent.saved = ent.labels.slice();
+  }
+  if (state.page && (state.tab === "text" || state.tab === "modern")) {
     state.page[state.tab] = $("#text").value;
     await api.update_text(state.index, state.tab, $("#text").value, state.tab === "text" ? (state.page.fixes || []) : null);
   }
@@ -713,16 +878,7 @@ window.addEventListener("pywebviewready", async () => {
     checkPages();
   });
   $("#page-custom").addEventListener("input", checkPages);
-  $("#start-btn").addEventListener("click", async () => {
-    if (state.count && state.dirty && !state.confirmRestart) {
-      state.confirmRestart = true;
-      $("#start-btn").textContent = "Start anyway";
-      const note = $("#restart-note");
-      note.textContent = `Starting again replaces the results for ${state.source}, and you have changes that are not saved. ` +
-        "Press Return to results and Save all pages to keep them, or press Start anyway.";
-      note.classList.remove("hidden");
-      return;
-    }
+  async function beginReading() {
     showBanner(""); resetRestart();
     if (state.pageMode === "custom" && !checkPages()) {
       showBanner(`Check the pages to read: write them like 1-5, 8, 11-13` + (state.totalPages ? `, from 1 to ${state.totalPages}.` : "."));
@@ -730,6 +886,64 @@ window.addEventListener("pywebviewready", async () => {
     }
     const r = await api.start(state.paths, state.spelling, state.pageMode, $("#page-custom").value);
     if (!r.ok) showBanner(r.error); else window.onProgress(0, 0, "Starting…");
+  }
+  // With results on the Results page, ask before a new reading replaces them.
+  const confirmBox = $("#confirm");
+  const closeConfirm = () => { confirmBox.classList.add("hidden"); $("#start-btn").focus(); };
+  $("#start-btn").addEventListener("click", () => {
+    if (!state.count) { beginReading(); return; }
+    const pages = `${state.count} page${state.count === 1 ? "" : "s"}`;
+    $("#confirm-text").textContent = `Starting a new reading deletes the results for ${state.source} (${pages}) ` +
+      "from the Results page, including your corrections" +
+      (state.dirty ? ", some of which are not saved yet." : ". Files you have already saved are kept.");
+    $("#confirm-save").classList.toggle("hidden", !state.dirty);
+    confirmBox.classList.remove("hidden"); $("#confirm-cancel").focus();
+  });
+  $("#confirm-cancel").addEventListener("click", closeConfirm);
+  $("#confirm-ok").addEventListener("click", () => { confirmBox.classList.add("hidden"); beginReading(); });
+  $("#confirm-save").addEventListener("click", async () => {
+    confirmBox.classList.add("hidden");
+    const r = await api.save(null, state.fileName, state.fileStart);
+    state.dirty = false;
+    showBanner(`Saved ${r.files} files to ${r.folder}.`);
+    beginReading();
+  });
+  confirmBox.addEventListener("keydown", (e) => { if (e.key === "Escape") closeConfirm(); });
+  // Book layout and Entries
+  $("#layout").addEventListener("change", async (e) => {
+    await api.set_layout(e.target.value); state.settings.layout = e.target.value;
+    $("#tab-entries").classList.toggle("hidden", e.target.value === "plain");
+  });
+  $("#ent-table-btn").addEventListener("click", async () => {
+    ent.view = "table";
+    ent.preview = entChanged() ? await api.preview_entries(state.index, ent.labels) : null;   // The table as it will be.
+    renderEntries();
+  });
+  $("#ent-sort-btn").addEventListener("click", () => { ent.view = "sort"; renderEntries(); });
+  $("#ent-forget").addEventListener("click", async () => {
+    if (!ent.forgetArmed) { ent.forgetArmed = true; $("#ent-forget").textContent = `Forget all ${ent.data.taught} taught page${ent.data.taught === 1 ? "" : "s"}? Click again`; return; }
+    await api.forget_teaching(); await loadEntries();
+    $("#ent-note").textContent = "Forgotten. The app is back to its starting rules.";
+  });
+  $("#ent-reset").addEventListener("click", () => { ent.labels = ent.saved.slice(); ent.preview = null; renderEntries(); });
+  $("#ent-teach").addEventListener("click", async () => {
+    $("#ent-teach").disabled = true; $("#ent-teach").textContent = "Learning…";
+    ent.data = await api.teach(state.index, ent.labels);
+    ent.labels = ent.data.labels.slice(); ent.saved = ent.data.labels.slice(); ent.preview = null;
+    $("#ent-teach").textContent = "Teach the app";
+    renderEntries();
+    $("#ent-note").textContent = `Learned. The app now sorts the other pages with this in mind (${ent.data.taught} page${ent.data.taught === 1 ? "" : "s"} taught).`;
+  });
+  $("#ent-body").addEventListener("keydown", (e) => {
+    const row = e.target.closest && e.target.closest(".sort-line");
+    if (!row || ent.view !== "sort") return;
+    const i = +row.dataset.line, keys = { p: "proverb", t: "translation", e: "explanation", x: "other", "-": "other" };
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault(); focusLine(Math.max(0, Math.min(ent.labels.length - 1, i + (e.key === "ArrowDown" ? 1 : -1))));
+    } else if (keys[e.key.toLowerCase()] && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault(); setLabel(i, keys[e.key.toLowerCase()], e.shiftKey);
+      focusLine(Math.min(ent.labels.length - 1, i + 1));
+    }
   });
   $("#review-btn").addEventListener("click", () => { resetRestart(); showResults(state.index); });
   $("#cancel-btn").addEventListener("click", () => {
@@ -743,6 +957,19 @@ window.addEventListener("pywebviewready", async () => {
   });
   $("#prev-btn").addEventListener("click", async () => { await keepEdits(); showResults(state.index - 1); });
   $("#next-btn").addEventListener("click", async () => { await keepEdits(); showResults(state.index + 1); });
+  const jump = async () => {
+    const n = parseInt($("#page-input").value, 10);
+    if (!Number.isFinite(n)) { $("#page-input").value = state.index + 1; return; }
+    const target = Math.min(Math.max(n, 1), state.count) - 1;
+    if (target === state.index) { $("#page-input").value = state.index + 1; return; }
+    await keepEdits(); showResults(target);
+  };
+  $("#page-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); jump(); }
+    else if (e.key === "Escape") { $("#page-input").value = state.index + 1; $("#page-input").blur(); }
+  });
+  $("#page-input").addEventListener("change", jump);
+  $("#page-input").addEventListener("focus", () => $("#page-input").select());
   document.querySelectorAll("#tabs button").forEach((b) => b.addEventListener("click", async () => { await keepEdits(); showTab(b.dataset.tab); }));
   $("#text").addEventListener("blur", keepEdits);
   $("#text").addEventListener("input", () => { state.dirty = true; });

@@ -33,7 +33,7 @@ fi
 
 pyinstaller --noconfirm --windowed --name "Twi OCR" \
   --distpath app/dist --workpath app/build --specpath app/build \
-  --paths "$ROOT" --hidden-import postcorrect --hidden-import orthography \
+  --paths "$ROOT" --hidden-import postcorrect --hidden-import orthography --hidden-import structure \
   --add-data "$ROOT/app/ui:ui" \
   --add-data "$ROOT/models/twi.traineddata:models" \
   --add-data "$ROOT/models/twi_1879.traineddata:models" \

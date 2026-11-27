@@ -40,6 +40,7 @@ PROJECT = APP_DIR if FROZEN else APP_DIR.parent   # Holds models/, data/, ocr.py
 sys.path.insert(0, str(PROJECT))
 
 import orthography   # noqa: E402  (needs the path above)
+import structure     # noqa: E402  (sorts lines into proverb / translation / explanation)
 
 UI_FILE = APP_DIR / "ui" / "index.html"
 MODELS = PROJECT / "models"
@@ -100,7 +101,8 @@ SPELLINGS = {
 
 def load_settings() -> dict:
     """Return saved settings, or the defaults on first run."""
-    settings = {"tesseract": "", "output": str(DEFAULT_OUTPUT), "fix_il": True, "modern_copy": True, "fast": True}
+    settings = {"tesseract": "", "output": str(DEFAULT_OUTPUT), "fix_il": True, "modern_copy": True, "fast": True,
+                "layout": "plain"}
     try:
         settings.update(json.loads(SETTINGS_FILE.read_text(encoding="utf-8")))
     except (OSError, ValueError):
@@ -301,6 +303,7 @@ class Api:
         self._busy = False
         self._cancel = threading.Event()
         self._lock = threading.Lock()
+        self._sorters: dict[str, structure.Sorter] = {}
         self._procs: set[subprocess.Popen] = set()   # Tesseract runs to stop on Cancel.
 
     # Status and settings
@@ -539,6 +542,101 @@ class Api:
             if fixes is not None and which == "text":
                 self._pages[index]["fixes"] = fixes
 
+    # Book layout: sorting each page into entries (proverb, translation, explanation)
+    def _sorter(self) -> structure.Sorter | None:
+        layout = self._settings.get("layout", "plain")
+        if layout not in structure.LAYOUTS:
+            return None
+        if layout not in self._sorters:
+            english = {w.strip() for w in ENGLISH_LIST.read_text(encoding="utf-8").splitlines()} \
+                if ENGLISH_LIST.exists() else set()
+            twi = {w.lower().replace("’", "'") for w in structure.WORD.findall(WORD_LIST.read_text(encoding="utf-8"))} \
+                if WORD_LIST.exists() else set()
+            self._sorters[layout] = structure.Sorter(layout, english, twi,
+                                                     store=SETTINGS_DIR / "layouts" / f"{layout}.json")
+        return self._sorters[layout]
+
+    def _page_entries(self, i: int) -> tuple[list[str], list[str], list[dict]]:
+        """Lines, their labels (the user's sorting where given) and the entries of page i."""
+        sorter = self._sorter()
+        page = self._pages[i]
+        lines = structure.page_lines(page["text"])
+        labels = sorter.label(lines)
+        mine = page.get("sorted", {})
+        labels = [mine.get(line, lab) for line, lab in zip(lines, labels)]
+        return lines, labels, structure.build_entries(lines, labels, sorter.layout)
+
+    def set_layout(self, layout: str) -> None:
+        self._settings["layout"] = layout if layout in structure.LAYOUTS else "plain"
+        save_settings(self._settings)
+
+    def entries(self, index: int) -> dict:
+        """The Entries view of one page."""
+        sorter = self._sorter()
+        if sorter is None or not 0 <= index < len(self._pages):
+            return {"layout": "plain"}
+        lines, labels, entries = self._page_entries(index)
+        spec = structure.LAYOUTS[sorter.layout]
+        return {"layout": sorter.layout, "lines": lines, "labels": labels, "entries": entries,
+                "order": spec["labels"], "names": spec["names"],
+                "sorted_here": bool(self._pages[index].get("sorted")), "taught": sorter.taught_pages}
+
+    def preview_entries(self, index: int, labels: list[str]) -> list[dict]:
+        """The entries a re-sorting would give, before it is taught."""
+        sorter = self._sorter()
+        if sorter is None or not 0 <= index < len(self._pages):
+            return []
+        lines = structure.page_lines(self._pages[index]["text"])
+        labels = [lab if lab in sorter.labels else structure.OTHER for lab in labels][:len(lines)]
+        return structure.build_entries(lines, labels, sorter.layout)
+
+    def teach(self, index: int, labels: list[str]) -> dict:
+        """Keep the user's sorting of a page and learn from it for the other pages."""
+        sorter = self._sorter()
+        if sorter is None or not 0 <= index < len(self._pages):
+            return {"layout": "plain"}
+        page = self._pages[index]
+        lines = structure.page_lines(page["text"])
+        labels = [lab if lab in sorter.labels else structure.OTHER for lab in labels][:len(lines)]
+        page["sorted"] = dict(zip(lines, labels))
+        sorter.teach(f"{self._source_name}#{page.get('seq', index + 1)}", lines, labels)
+        return self.entries(index)
+
+    def forget_teaching(self) -> dict:
+        sorter = self._sorter()
+        if sorter:
+            sorter.forget()
+        for page in self._pages:
+            page.pop("sorted", None)
+        return {"ok": True}
+
+    def _save_entries(self, out: Path, name: str, start: int) -> str:
+        """Write every page's entries to one CSV (opens in Excel, Numbers, Google Sheets)."""
+        import csv
+        sorter = self._sorter()
+        spec = structure.LAYOUTS[sorter.layout]
+        per_page = []
+        for i, page in enumerate(self._pages):
+            entries = self._page_entries(i)[2]
+            for e in entries:
+                e["page"] = start + page.get("seq", i + 1) - 1
+            per_page.append(entries)
+        rows = structure.merge_pages(per_page, sorter.layout)
+        path = out / f"{name}_entries.csv"
+        with path.open("w", encoding="utf-8-sig", newline="") as f:   # utf-8-sig: Excel shows ɛ and ɔ.
+            w = csv.writer(f)
+            w.writerow(["Page", "No.", spec["names"][structure.PROVERB], spec["names"][structure.TRANSLATION],
+                        spec["names"][structure.EXPLANATION], "To check"])
+            for e in rows:
+                check = [f"no {spec['names'][m].lower()}" for m in e["missing"]]
+                if e.get("out_of_order"):
+                    check.append("number out of order")
+                if e.get("continued"):
+                    check.append("starts before the first page read")
+                w.writerow([e.get("page", ""), e["number"], e[structure.PROVERB], e[structure.TRANSLATION],
+                            e[structure.EXPLANATION], "; ".join(check)])
+        return path.name
+
     def default_name(self) -> str:
         """The file name the results start with: the PDF's or folder's name."""
         return clean_name(Path(self._source_name).stem) or "page"
@@ -549,6 +647,7 @@ class Api:
         Each file is numbered by its page in the PDF, counted from ``start``, so
         reading only odd pages saves name_001, name_003, ... It goes in a folder called
         ``name`` inside the output folder. A Basel Twi 1879 page also gets name_001.modern.txt.
+        With a book layout such as Proverbs, Save all also writes name_entries.csv.
         """
         name = clean_name(name) or self.default_name()
         start = max(0, int(start or 0))
@@ -566,6 +665,8 @@ class Api:
             if page["modern"] is not None and self._settings.get("modern_copy", True):
                 (out / f"{stem}.modern.txt").write_text(page["modern"], encoding="utf-8")
                 written.append(f"{stem}.modern.txt")
+        if index is None and self._sorter() is not None:
+            written.append(self._save_entries(out, name, start))
         return {"folder": str(out), "files": len(written), "first": written[0] if written else ""}
 
     def reveal(self, folder: str) -> None:
